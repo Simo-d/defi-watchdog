@@ -1,0 +1,111 @@
+.footer {
+  background-color: #ffffff;
+  padding: 3rem 0;
+  margin-top: 2rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #0284c7;
+  margin-bottom: 1rem;
+}
+
+.logoIcon {
+  height: 2rem;
+  width: 2rem;
+  margin-right: 0.5rem;
+  color: #0284c7;
+}
+
+.description {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  max-width: 20rem;
+}
+
+.socialLinks {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.socialIcon {
+  color: #6b7280;
+  height: 1.5rem;
+  width: 1.5rem;
+  transition: color 0.2s;
+}
+
+.socialIcon:hover {
+  color: #111827;
+}
+
+.linksGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+@media (min-width: 640px) {
+  .linksGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.linkGroup h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.linkList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.linkItem {
+  margin-bottom: 0.75rem;
+}
+
+.link {
+  color: #6b7280;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: #111827;
+}
+
+.copyright {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
