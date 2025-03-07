@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       }
     });
     
-    const { address, network = 'mainnet', forceRefresh = false, useMultiAI = false } = req.body;
+    const { address, network = 'mainnet', forceRefresh = false, useMultiAI = false, fastMode = true } = req.body;
 
     // Validate inputs
     if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
@@ -86,16 +86,25 @@ export default async function handler(req, res) {
         }
         
         // If we get here, we need to perform a new audit
-        console.log(`Performing new audit for ${address} on ${network}`);
+        console.log(`Performing ${fastMode ? 'fast' : 'detailed'} audit for ${address} on ${network}`);
+
+        const timeoutDuration = fastMode ? 25000 : 60000; // 25 seconds for fast mode
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Analysis timed out after 60 seconds")), 60000);
+          setTimeout(() => reject(new Error(`Analysis timed out after ${timeoutDuration/1000} seconds`)), timeoutDuration);
         });
         
-        // Race between the analysis and the timeout
+        // Pass fast mode to audit function
+        const auditOptions = { 
+          useMultiAI, 
+          fastMode,
+          skipValidation: fastMode // Skip the secondary AI validation in fast mode
+        };
+        
+        // Race between analysis and timeout
         const auditResults = await Promise.race([
-          auditSmartContract(address, network, { useMultiAI }),
+          auditSmartContract(address, network, auditOptions),
           timeoutPromise
-        ]);        
+        ]);      
         // Save to local storage
         try {
           await saveAuditReport(auditResults);
