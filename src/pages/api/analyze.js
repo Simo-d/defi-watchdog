@@ -6,7 +6,7 @@ import crypto from 'crypto';
 // Active requests tracking
 const activeRequests = new Map();
 export const config = {
-  maxDuration: 120 // This sets a 2-minute timeout
+  maxDuration: 300 // 5 minutes maximum duration for this endpoint
 };
 export default async function handler(req, res) {
   // Only allow POST method

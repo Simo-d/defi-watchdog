@@ -535,6 +535,9 @@ function generateAIPrompt(contractData, contractMetadata, staticAnalysisResults)
 /**
  * Call an AI model with the provided prompt
  */
+/**
+ * Call an AI model with the provided prompt
+ */
 async function callAIModel(aiConfig, prompt) {
   try {
     console.log(`Calling AI API: ${aiConfig.endpoint}`);
@@ -544,15 +547,23 @@ async function callAIModel(aiConfig, prompt) {
     }
     
     // Use a shorter prompt if too long
-    if (prompt.length > 50000) { // Make this even shorter for serverless
-      prompt = prompt.substring(0, 50000) + "\n\n[Content truncated for performance]";
+    if (prompt.length > 25000) {
+      console.log("Shortening prompt to improve API response time");
+      prompt = prompt.substring(0, 25000) + "\n\n[Content truncated for performance]";
     }
     
     // Add timeout control directly on the fetch call
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
+    const signal = controller.signal;
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      console.log("AI API call timed out after 45 seconds");
+    }, 45000); // 45-second timeout
     
     try {
+      console.log(`Making API request to ${aiConfig.endpoint} with ${aiConfig.model} model`);
+      const requestStart = Date.now();
+      
       const response = await fetch(aiConfig.endpoint, {
         method: 'POST',
         headers: {
@@ -565,19 +576,42 @@ async function callAIModel(aiConfig, prompt) {
           max_tokens: 4000,
           temperature: 0.2
         }),
-        signal: controller.signal
+        signal
       });
+      
+      const requestDuration = Date.now() - requestStart;
+      console.log(`API request completed in ${requestDuration}ms`);
       
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
       }
       
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
       clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        console.log("Request was aborted due to timeout");
+        // Return a structured fallback response
+        return JSON.stringify({
+          findings: [
+            {
+              title: "Analysis Timeout",
+              description: "The AI analysis timed out. This may be due to the contract's complexity or size.",
+              severity: "INFO",
+              impact: "Unable to complete full AI analysis",
+              recommendation: "Try analyzing with static analysis only."
+            }
+          ],
+          overallAssessment: "Analysis could not be completed due to timeout.",
+          securityScore: 50,
+          contractType: "Unknown"
+        });
+      }
+      
       throw error;
     }
   } catch (error) {
@@ -587,15 +621,16 @@ async function callAIModel(aiConfig, prompt) {
     return JSON.stringify({
       findings: [
         {
-          title: "Analysis Timeout",
-          description: "The AI analysis timed out. This may be due to the contract's complexity or size.",
+          title: "Analysis Error",
+          description: "The AI analysis could not be completed due to an error: " + error.message,
           severity: "INFO",
-          impact: "Unable to complete full AI analysis",
-          recommendation: "Try analyzing with static analysis only, or break down the contract into smaller parts."
+          impact: "Unable to complete AI analysis",
+          recommendation: "Try again later or reduce contract complexity."
         }
       ],
-      overallAssessment: "Analysis terminated due to timeout.",
-      securityScore: 50
+      overallAssessment: "Analysis could not be completed due to an error.",
+      securityScore: 50,
+      contractType: "Unknown"
     });
   }
 }
