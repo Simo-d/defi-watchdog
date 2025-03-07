@@ -1,8 +1,12 @@
 {
     "functions": {
-      "api/analyze.js": {
+      "src/pages/api/analyze.js": {
+        "memory": 1024,
         "maxDuration": 60
       }
+    },
+    "env": {
+      "OPENAI_API_KEY": "@openai-api-key",
+      "ETHERSCAN_API_KEY": "@etherscan-api-key"
     }
   }
-  
