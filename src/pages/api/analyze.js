@@ -1,17 +1,27 @@
 // Smart Contract AI Audit System
 // This system uses AI to analyze smart contract code and identify security vulnerabilities
+import config from '../../lib/config';
 
 import { getContractSource, getContractInfo, getEtherscanUrl } from '../../lib/etherscan';
+import connectToDatabase from '../../lib/database';
+import AuditReport from '../../models/AuditReport';
+import { multiAIAudit, adaptMultiAIResults } from '../../lib/multi-ai-audit';
 
+import { 
+  saveAuditReport, 
+  findMostRecentAuditReport, 
+  auditReportExists 
+} from '../../lib/localStorage';
+import crypto from 'crypto';
 // Configuration for AI models
 const AI_CONFIG = {
   primary: {
-    model: 'claude-3-sonnet-20240229',
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    endpoint: 'https://api.anthropic.com/v1/messages'
+    model: config.ai.openai.model,
+    apiKey: process.env.OPENAI_API_KEY,
+    endpoint: 'https://api.openai.com/v1/chat/completions'
   },
   secondary: {
-    model: 'gpt-4-turbo',
+    model: config.ai.openai.fallbackModel,
     apiKey: process.env.OPENAI_API_KEY,
     endpoint: 'https://api.openai.com/v1/chat/completions'
   }
@@ -130,12 +140,31 @@ export async function auditSmartContract(address, network = 'mainnet', options =
     
     // 3. Perform initial static analysis
     const staticAnalysisResults = performStaticAnalysis(contractData.sourceCode);
+    // 4. Run AI-powered analysis using either traditional or multi-AI approach
+let aiAnalysisResults;
+let validatedResults;
+
+if (options.useMultiAI) {
+  console.log("Using multi-AI analysis system...");
+  try {
+    // Call the multi-AI analysis with reconciliation
+    const multiAIResults = await multiAIAudit(contractData.sourceCode, contractMetadata.name, true);
     
-    // 4. Run AI-powered deep analysis
-    const aiAnalysisResults = await performAIAnalysis(contractData, contractMetadata, staticAnalysisResults);
-    
-    // 5. Validate findings with second AI model (watchdog approach)
-    const validatedResults = await validateFindings(contractData, aiAnalysisResults);
+    // Map the multi-AI result format to our existing format
+    aiAnalysisResults = adaptMultiAIResults(multiAIResults);
+    validatedResults = aiAnalysisResults; // No need for additional validation
+  } catch (error) {
+    console.error("Multi-AI analysis failed, falling back to traditional pipeline:", error);
+    // Continue with the traditional pipeline
+    aiAnalysisResults = await performAIAnalysis(contractData, contractMetadata, staticAnalysisResults);
+    validatedResults = await validateFindings(contractData, aiAnalysisResults);
+  }
+} else {
+  // Traditional analysis pipeline
+  aiAnalysisResults = await performAIAnalysis(contractData, contractMetadata, staticAnalysisResults);
+  validatedResults = await validateFindings(contractData, aiAnalysisResults);
+}
+
     
     // 6. Generate comprehensive report
     const securityScore = calculateSecurityScore(validatedResults);
@@ -370,20 +399,88 @@ async function performAIAnalysis(contractData, contractMetadata, staticAnalysisR
     // Prepare the AI prompt with the contract code and initial findings
     const prompt = generateAIPrompt(contractData, contractMetadata, staticAnalysisResults);
     
-    // Call the primary AI model
-    const aiResponse = await callAIModel(AI_CONFIG.primary, prompt);
+    // Try the primary AI model first
+    let aiResponse;
+    try {
+      console.log("Attempting analysis with primary AI model...");
+      aiResponse = await callAIModel(AI_CONFIG.primary, prompt);
+    } catch (primaryError) {
+      console.warn("Primary AI model failed:", primaryError);
+      
+      // Try the secondary AI model as backup
+      console.log("Falling back to secondary AI model...");
+      try {
+        aiResponse = await callAIModel(AI_CONFIG.secondary, prompt);
+      } catch (secondaryError) {
+        console.error("Secondary AI model also failed:", secondaryError);
+        throw new Error("All AI models failed");
+      }
+    }
     
     // Parse the AI response to extract structured findings
-    return parseAIResponse(aiResponse);
+    const aiResults = parseAIResponse(aiResponse);
+    
+    // If AI analysis had no findings, add the static analysis findings
+    if (!aiResults.findings || aiResults.findings.length === 0) {
+      console.log("AI analysis returned no findings, using static analysis findings");
+      aiResults.findings = staticAnalysisResults.map(finding => ({
+        title: finding.type,
+        description: finding.description,
+        severity: finding.severity,
+        impact: "Potential security issue detected by static analysis",
+        recommendation: "Review code related to this pattern"
+      }));
+    }
+    
+    return aiResults;
   } catch (error) {
     console.error("AI analysis failed:", error);
-    return {
-      findings: staticAnalysisResults,
-      error: "AI analysis failed: " + error.message
-    };
+    
+    // Create a meaningful report from static analysis as fallback
+    return createStaticAnalysisReport(staticAnalysisResults, contractMetadata.type);
   }
 }
-
+function createStaticAnalysisReport(staticAnalysisResults, contractType) {
+  // Convert static findings to structured format
+  const structuredFindings = staticAnalysisResults.map(finding => ({
+    title: finding.type,
+    description: finding.description,
+    severity: finding.severity,
+    impact: "Potential security issue detected by static analysis",
+    recommendation: "Review code related to this pattern"
+  }));
+  
+  // Count findings by severity
+  const severityCounts = {
+    CRITICAL: structuredFindings.filter(f => f.severity === "CRITICAL").length,
+    HIGH: structuredFindings.filter(f => f.severity === "HIGH").length,
+    MEDIUM: structuredFindings.filter(f => f.severity === "MEDIUM").length,
+    LOW: structuredFindings.filter(f => f.severity === "LOW").length,
+    INFO: structuredFindings.filter(f => f.severity === "INFO").length
+  };
+  
+  // Calculate a basic score based on findings
+  let score = 80; // Start with a decent score
+  score -= severityCounts.CRITICAL * 15;
+  score -= severityCounts.HIGH * 10;
+  score -= severityCounts.MEDIUM * 5;
+  score -= severityCounts.LOW * 2;
+  score = Math.max(30, Math.min(score, 90)); // Keep between 30 and 90
+  
+  return {
+    findings: structuredFindings,
+    overallAssessment: `This is a ${contractType} contract that has been analyzed using static analysis only. AI-powered analysis was unavailable.`,
+    securityScore: score,
+    contractType: contractType,
+    findingCounts: {
+      critical: severityCounts.CRITICAL,
+      high: severityCounts.HIGH,
+      medium: severityCounts.MEDIUM,
+      low: severityCounts.LOW,
+      info: severityCounts.INFO
+    }
+  };
+}
 /**
  * Generate a comprehensive prompt for the AI model
  */
@@ -445,8 +542,33 @@ function generateAIPrompt(contractData, contractMetadata, staticAnalysisResults)
  */
 async function callAIModel(aiConfig, prompt) {
   try {
+    console.log(`Calling AI API: ${aiConfig.endpoint}`);
+    
+    // Check if API key is available
+    if (!aiConfig.apiKey) {
+      console.warn(`No API key provided for ${aiConfig.endpoint}`);
+      throw new Error("Missing API key");
+    }
+    
+    // Check if prompt is too long (rough estimate)
+    if (prompt.length > 100000) {
+      console.warn("Prompt is very long, might exceed token limits");
+      // Truncate the prompt if it's too long
+      prompt = prompt.substring(0, 90000) + "\n\n[Content truncated due to length]";
+    }
+    
     // Anthropic Claude API call
     if (aiConfig.endpoint.includes('anthropic')) {
+      console.log(`Using Anthropic API with model: ${aiConfig.model}`);
+      
+      // Log request details for debugging (removing sensitive info)
+      console.log("Request headers:", {
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+        // Don't log the actual API key
+        "x-api-key": aiConfig.apiKey ? "[REDACTED]" : "MISSING"
+      });
+      
       const response = await fetch(aiConfig.endpoint, {
         method: 'POST',
         headers: {
@@ -461,8 +583,12 @@ async function callAIModel(aiConfig, prompt) {
         })
       });
       
+      // Handle non-OK responses
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorBody = await response.text();
+        console.error(`API request failed with status ${response.status}:`, errorBody);
+        
+        throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
       }
       
       const data = await response.json();
@@ -470,6 +596,8 @@ async function callAIModel(aiConfig, prompt) {
     } 
     // OpenAI GPT API call
     else if (aiConfig.endpoint.includes('openai')) {
+      console.log(`Using OpenAI API with model: ${aiConfig.model}`);
+      
       const response = await fetch(aiConfig.endpoint, {
         method: 'POST',
         headers: {
@@ -484,8 +612,12 @@ async function callAIModel(aiConfig, prompt) {
         })
       });
       
+      // Handle non-OK responses
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorBody = await response.text();
+        console.error(`API request failed with status ${response.status}:`, errorBody);
+        
+        throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
       }
       
       const data = await response.json();
@@ -495,7 +627,22 @@ async function callAIModel(aiConfig, prompt) {
     throw new Error("Unsupported AI provider");
   } catch (error) {
     console.error("AI API call failed:", error);
-    throw error;
+    
+    // Return a fallback response that won't break the application
+    return JSON.stringify({
+      findings: [
+        {
+          title: "Static Analysis Only",
+          description: "AI analysis was not available. This is a static analysis only.",
+          severity: "INFO",
+          impact: "Limited analysis without AI capabilities",
+          recommendation: "Consider checking AI API configuration or try again later."
+        }
+      ],
+      overallAssessment: "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+      securityScore: 60, // Neutral score
+      contractType: "Unknown" // Will be determined by other functions
+    });
   }
 }
 
@@ -1117,14 +1264,17 @@ function assessCodeQuality(validatedResults) {
 }
 
 // API handler function for Next.js
+const activeRequests = new Map();
+
+// Then replace your handler function with this version:
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { address, network = 'mainnet' } = req.body;
-    
+    const { address, network = 'mainnet', forceRefresh = false, useMultiAI = false } = req.body;
+
     // Validate inputs
     if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
       return res.status(400).json({ 
@@ -1148,8 +1298,106 @@ export default async function handler(req, res) {
       });
     }
     
-    const auditResults = await auditSmartContract(address, network);
-    return res.status(200).json(auditResults);
+    // Create a unique key for this request
+    const requestKey = `${address.toLowerCase()}-${network}-${useMultiAI ? 'multi' : 'single'}`;
+
+    
+    // Check if we already have an in-progress request for this address
+    if (activeRequests.has(requestKey)) {
+      console.log(`Request already in progress for ${requestKey}, waiting...`);
+      // Wait for the existing request to complete
+      const result = await activeRequests.get(requestKey);
+      return res.status(200).json(result);
+    }
+    
+    // Create a promise for this request
+    const requestPromise = (async () => {
+      try {
+        // Check if we have a recent audit for this contract
+        if (!forceRefresh) {
+          const existingAudit = await findMostRecentAuditReport({
+            address: address.toLowerCase(),
+            network,
+            // Only use reports from the last 7 days
+            createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+          });
+          
+          if (existingAudit) {
+            console.log(`Found recent audit for ${address} on ${network}`);
+            return {
+              ...existingAudit,
+              isFromCache: true,
+              cachedAt: existingAudit.createdAt
+            };
+          }
+        }
+        
+        // Fetch contract source code
+        const contractData = await getContractSource(address, network);
+        
+        // Generate hash of source code
+        let sourceCodeHash = "";
+        if (contractData.sourceCode) {
+          sourceCodeHash = crypto
+            .createHash('sha256')
+            .update(contractData.sourceCode || '')
+            .digest('hex');
+          
+          // Check if we have an audit with the same source code hash
+          if (!forceRefresh) {
+            const existingAuditForSource = await findMostRecentAuditReport({
+              address: address.toLowerCase(),
+              network,
+              sourceCodeHash
+            });
+            
+            if (existingAuditForSource) {
+              console.log(`Found audit with matching source code for ${address} on ${network}`);
+              return {
+                ...existingAuditForSource,
+                isFromCache: true,
+                cachedAt: existingAuditForSource.createdAt
+              };
+            }
+          }
+        }
+        
+        // If we get here, we need to perform a new audit
+        console.log(`Performing new audit for ${address} on ${network}`);
+        const auditResults = await auditSmartContract(address, network, { useMultiAI });
+
+        
+        // Add source code hash to results
+        if (sourceCodeHash) {
+          auditResults.sourceCodeHash = sourceCodeHash;
+        }
+        
+        // Save to local storage
+        try {
+          await saveAuditReport(auditResults);
+          console.log(`Saved audit report for ${address} on ${network}`);
+        } catch (storageError) {
+          console.error('Error saving audit report to storage:', storageError);
+          // Continue even if saving fails
+        }
+        
+        return auditResults;
+      } catch (error) {
+        console.error('Error during audit:', error);
+        throw error;
+      }
+    })();
+    
+    // Store the promise in the map
+    activeRequests.set(requestKey, requestPromise);
+    
+    // Wait for the request to complete
+    const result = await requestPromise;
+    
+    // Always remove the request from the map when done
+    activeRequests.delete(requestKey);
+    
+    return res.status(200).json(result);
   } catch (error) {
     console.error('Error in audit endpoint:', error);
     // Return a structured error response that won't break the UI

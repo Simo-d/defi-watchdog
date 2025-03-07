@@ -1,8 +1,22 @@
 .header {
   background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+/* Add this new class for the logo when scrolled to top */
+.logoScrolled {
+  color: #0284c7; /* Keep your blue color */
+  text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2); /* Subtle text shadow for better visibility */
 }
 
+/* Add this for nav links when scrolled to top */
+.navLinkScrolled {
+  color: #374151; /* Darker gray for better contrast */
+  font-weight: 600; /* Make it slightly bolder */
+}
 .container {
   max-width: 1200px;
   margin: 0 auto;

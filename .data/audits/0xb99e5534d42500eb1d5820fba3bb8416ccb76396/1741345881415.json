@@ -1,0 +1,80 @@
+{
+  "success": true,
+  "address": "0xb99e5534d42500eb1d5820fba3bb8416ccb76396",
+  "network": "linea-mainnet",
+  "contractName": "NFT",
+  "contractType": "ERC721 NFT",
+  "compiler": "v0.8.18+commit.87f61d96",
+  "analysis": {
+    "overview": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "contractType": "ERC721 NFT",
+    "keyFeatures": [
+      "NFT minting, transferring, and burning",
+      "Token metadata management",
+      "Ownership tracking per token ID"
+    ],
+    "implementationDetails": {
+      "standard": "ERC721",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "MEDIUM",
+        "description": "The 'mulDiv' function contains complex assembly code and multiple mathematical operations that could be prone to errors or unintended behavior, especially with edge cases involving large numbers or specific values of 'denominator'.",
+        "codeReference": "See full report",
+        "impact": "Potential for calculation errors or overflow/underflow conditions that could affect contract reliability.",
+        "recommendation": "Thorough testing and potentially simplifying the function to improve readability and reduce the risk of errors."
+      },
+      {
+        "severity": "LOW",
+        "description": "The 'average' function uses bitwise operations to calculate the average of two numbers. While this method prevents overflow in the addition of 'a' and 'b', it should be noted that this approach may not be immediately clear or standard to all Solidity developers, potentially leading to misunderstandings or errors if modified without proper understanding.",
+        "codeReference": "See full report",
+        "impact": "Potential for logical errors or incorrect calculations if the function is modified improperly.",
+        "recommendation": "Consider adding detailed comments explaining the operation to ensure clarity and maintainability."
+      },
+      {
+        "severity": "INFO",
+        "description": "AI analysis was not available. This is a static analysis only.",
+        "codeReference": "See full report",
+        "impact": "Limited analysis without AI capabilities",
+        "recommendation": "Consider checking AI API configuration or try again later."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Uses SafeMath or Solidity 0.8+ for overflow protection.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 77,
+    "riskLevel": "Low Risk",
+    "explanation": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 1
+    }
+  },
+  "securityScore": 77,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "16.84s",
+  "timestamp": "2025-03-07T11:11:21.405Z",
+  "sourceCodeHash": "47fda346010d6a1dfde57531f2c634c6389321a65f7885c047de45f04fdcf009",
+  "_id": "0d5b0ddb-d1b6-4b10-aa12-e4eb0d652d90",
+  "createdAt": "2025-03-07T11:11:21.415Z"
+}

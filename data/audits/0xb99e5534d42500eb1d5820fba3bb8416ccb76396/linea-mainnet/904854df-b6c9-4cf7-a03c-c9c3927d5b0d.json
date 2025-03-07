@@ -1,0 +1,81 @@
+{
+  "success": true,
+  "address": "0xb99e5534d42500eb1d5820fba3bb8416ccb76396",
+  "network": "linea-mainnet",
+  "contractName": "NFT",
+  "contractType": "ERC721 NFT",
+  "compiler": "v0.8.18+commit.87f61d96",
+  "analysis": {
+    "overview": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "contractType": "ERC721 NFT",
+    "keyFeatures": [
+      "NFT minting, transferring, and burning",
+      "Token metadata management",
+      "Ownership tracking per token ID"
+    ],
+    "implementationDetails": {
+      "standard": "ERC721",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "HIGH",
+        "description": "The `mulDiv` function uses inline assembly for certain operations. Inline assembly is powerful but prone to errors and can lead to security vulnerabilities if not used carefully.",
+        "codeReference": "See full report",
+        "impact": "Improper use of assembly could lead to unexpected behavior, making the contract vulnerable to attacks such as reentrancy or denial of service.",
+        "recommendation": "Review and audit all assembly blocks thoroughly. Prefer higher-level Solidity constructs where possible, and ensure that assembly usage is justified and safe."
+      },
+      {
+        "severity": "MEDIUM",
+        "description": "The `mulDiv` function performs multiplication and division which can lead to overflow if not properly handled. Although there are checks and assembly optimizations, the potential for overflow exists if inputs are not validated or constrained externally.",
+        "codeReference": "See full report",
+        "impact": "Could lead to incorrect calculations or denial of service if the contract relies on this function for critical calculations.",
+        "recommendation": "Implement input validation to ensure that values passed to `mulDiv` do not cause overflows. Consider using SafeMath or similar libraries for arithmetic operations to automatically include such checks."
+      },
+      {
+        "severity": "INFO",
+        "description": "AI analysis was not available. This is a static analysis only.",
+        "codeReference": "See full report",
+        "impact": "Limited analysis without AI capabilities",
+        "recommendation": "Consider checking AI API configuration or try again later."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Uses SafeMath or Solidity 0.8+ for overflow protection.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 73,
+    "riskLevel": "Medium Risk",
+    "explanation": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 73,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Medium Risk",
+  "isSafe": false,
+  "analysisTime": "20.55s",
+  "timestamp": "2025-03-04T21:40:23.085Z",
+  "sourceCodeHash": "47fda346010d6a1dfde57531f2c634c6389321a65f7885c047de45f04fdcf009",
+  "_id": "904854df-b6c9-4cf7-a03c-c9c3927d5b0d",
+  "createdAt": "2025-03-04T21:40:23.085Z",
+  "updatedAt": "2025-03-04T21:40:23.085Z"
+}

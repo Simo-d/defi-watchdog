@@ -1,0 +1,66 @@
+{
+  "success": true,
+  "address": "0x93c5d30a7509e60871b77a3548a5bd913334cd35",
+  "network": "sepolia",
+  "contractName": "MyToken",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.27+commit.40a35a09",
+  "analysis": {
+    "overview": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "AI analysis was not available. This is a static analysis only.",
+        "codeReference": "See full report",
+        "impact": "Limited analysis without AI capabilities",
+        "recommendation": "Consider checking AI API configuration or try again later."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 80,
+    "riskLevel": "Low Risk",
+    "explanation": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 80,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "3.15s",
+  "timestamp": "2025-03-07T11:58:20.615Z",
+  "sourceCodeHash": "ae7346f47bb863c0c6621282eb54d9274d4a3ef73a3497b1a0126ac80cb9c6ed",
+  "_id": "c9a0d3e3-7162-40f1-926e-a5be95e66461",
+  "createdAt": "2025-03-07T11:58:20.622Z"
+}

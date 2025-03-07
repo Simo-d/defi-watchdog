@@ -1,0 +1,29 @@
+{
+  "success": false,
+  "address": "0x4F61c93dDE6870dA429cF1F3843B2E89E7E2a85b",
+  "network": "sepolia",
+  "contractName": "Contract-0x4F61c9",
+  "contractType": "Unverified Contract",
+  "compiler": "Unknown",
+  "analysis": {
+    "contractType": "Unverified Contract",
+    "overview": "Contract source code is not verified or available",
+    "keyFeatures": [],
+    "implementationDetails": {},
+    "risks": [],
+    "securityConsiderations": {},
+    "securityScore": 0,
+    "riskLevel": "Unknown",
+    "explanation": "This contract does not have verified source code available. Consider using a verified contract or verify this contract on the blockchain explorer.",
+    "codeQuality": {}
+  },
+  "securityScore": 0,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Unknown",
+  "isSafe": false,
+  "analysisTime": "0s",
+  "error": "Contract source code not verified or available",
+  "timestamp": "2025-03-07T11:58:00.265Z",
+  "_id": "73bdfdb7-f53e-49ac-b064-48f1cf2927df",
+  "createdAt": "2025-03-07T11:58:00.273Z"
+}

@@ -1,0 +1,81 @@
+{
+  "success": true,
+  "address": "0xb99e5534d42500eb1d5820fba3bb8416ccb76396",
+  "network": "linea-mainnet",
+  "contractName": "NFT",
+  "contractType": "ERC721 NFT",
+  "compiler": "v0.8.18+commit.87f61d96",
+  "analysis": {
+    "overview": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "contractType": "ERC721 NFT",
+    "keyFeatures": [
+      "NFT minting, transferring, and burning",
+      "Token metadata management",
+      "Ownership tracking per token ID"
+    ],
+    "implementationDetails": {
+      "standard": "ERC721",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "HIGH",
+        "description": "The 'mulDiv' function does not explicitly check if the 'denominator' is zero before proceeding with calculations that assume it is non-zero. This can lead to division by zero errors.",
+        "codeReference": "See full report",
+        "impact": "Could cause transaction reversion or other critical errors in contract execution.",
+        "recommendation": "Add a require statement at the beginning of the function to ensure 'denominator' is not zero."
+      },
+      {
+        "severity": "MEDIUM",
+        "description": "The 'average' function calculates the average of two numbers using the formula '(a & b) + (a ^ b) / 2'. There is a potential risk of integer overflow if 'a ^ b' is very large.",
+        "codeReference": "See full report",
+        "impact": "Could lead to incorrect calculations and unexpected behavior.",
+        "recommendation": "Consider implementing safe math practices to prevent overflow, such as using OpenZeppelin's SafeMath library or Solidity 0.8's built-in overflow checks."
+      },
+      {
+        "severity": "INFO",
+        "description": "AI analysis was not available. This is a static analysis only.",
+        "codeReference": "See full report",
+        "impact": "Limited analysis without AI capabilities",
+        "recommendation": "Consider checking AI API configuration or try again later."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Uses SafeMath or Solidity 0.8+ for overflow protection.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 73,
+    "riskLevel": "Medium Risk",
+    "explanation": "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 73,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Medium Risk",
+  "isSafe": false,
+  "analysisTime": "12.43s",
+  "timestamp": "2025-03-04T21:40:04.447Z",
+  "sourceCodeHash": "47fda346010d6a1dfde57531f2c634c6389321a65f7885c047de45f04fdcf009",
+  "_id": "51e7d7f4-d9ff-420f-8da7-68672d18a8e3",
+  "createdAt": "2025-03-04T21:40:04.447Z",
+  "updatedAt": "2025-03-04T21:40:04.447Z"
+}
