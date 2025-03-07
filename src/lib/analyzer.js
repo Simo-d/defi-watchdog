@@ -563,20 +563,28 @@ async function callAIModel(aiConfig, prompt) {
         // Don't log the actual API key
         "x-api-key": aiConfig.apiKey ? "[REDACTED]" : "MISSING"
       });
-      
-      const response = await fetch(aiConfig.endpoint, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": aiConfig.apiKey,
-          "anthropic-version": "2023-06-01"
-        },
-        body: JSON.stringify({
-          model: aiConfig.model,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 4000
-        })
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      try{
+        const response = await fetch(aiConfig.endpoint, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": aiConfig.apiKey,
+            "anthropic-version": "2023-06-01"
+          },
+          body: JSON.stringify({
+            model: aiConfig.model,
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 4000
+          })
+        });
+        clearTimeout(timeoutId);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+
       
       // Handle non-OK responses
       if (!response.ok) {
