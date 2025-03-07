@@ -545,10 +545,9 @@ async function callAIModel(aiConfig, prompt) {
       throw new Error("Missing API key");
     }
     
-    // Check if prompt is too long (rough estimate)
+    // Check if prompt is too long
     if (prompt.length > 100000) {
       console.warn("Prompt is very long, might exceed token limits");
-      // Truncate the prompt if it's too long
       prompt = prompt.substring(0, 90000) + "\n\n[Content truncated due to length]";
     }
     
@@ -556,16 +555,12 @@ async function callAIModel(aiConfig, prompt) {
     if (aiConfig.endpoint.includes('anthropic')) {
       console.log(`Using Anthropic API with model: ${aiConfig.model}`);
       
-      // Log request details for debugging (removing sensitive info)
-      console.log("Request headers:", {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-        // Don't log the actual API key
-        "x-api-key": aiConfig.apiKey ? "[REDACTED]" : "MISSING"
-      });
+      // Use a longer timeout for Vercel serverless functions
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      try{
+      const signal = controller.signal;
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+      
+      try {
         const response = await fetch(aiConfig.endpoint, {
           method: 'POST',
           headers: {
@@ -577,26 +572,29 @@ async function callAIModel(aiConfig, prompt) {
             model: aiConfig.model,
             messages: [{ role: "user", content: prompt }],
             max_tokens: 4000
-          })
+          }),
+          signal // Add the AbortController signal here
         });
+        
         clearTimeout(timeoutId);
+        
+        // Handle non-OK responses
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error(`API request failed with status ${response.status}:`, errorBody);
+          throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
+        }
+        
+        const data = await response.json();
+        return data.content[0].text;
       } catch (error) {
         clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error("API request timed out after 45 seconds");
+        }
         throw error;
       }
-
-      
-      // Handle non-OK responses
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`API request failed with status ${response.status}:`, errorBody);
-        
-        throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
-      }
-      
-      const data = await response.json();
-      return data.content[0].text;
-    } 
+    }
     // OpenAI GPT API call
     else if (aiConfig.endpoint.includes('openai')) {
       console.log(`Using OpenAI API with model: ${aiConfig.model}`);

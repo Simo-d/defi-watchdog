@@ -85,8 +85,15 @@ export default async function handler(req, res) {
         
         // If we get here, we need to perform a new audit
         console.log(`Performing new audit for ${address} on ${network}`);
-        const auditResults = await auditSmartContract(address, network, { useMultiAI });
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Analysis timed out after 60 seconds")), 60000);
+        });
         
+        // Race between the analysis and the timeout
+        const auditResults = await Promise.race([
+          auditSmartContract(address, network, { useMultiAI }),
+          timeoutPromise
+        ]);        
         // Save to local storage
         try {
           await saveAuditReport(auditResults);
@@ -113,29 +120,34 @@ export default async function handler(req, res) {
     activeRequests.delete(requestKey);
     
     return res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in audit endpoint:', error);
-    const errorMessage = error.message || 'Unknown error occurred';
-    // Return a structured error response that won't break the UI
-    return res.status(500).json({
-      success: false,
-      error: errorMessage,
-      address: req.body.address || '',
-      network: req.body.network || 'mainnet',
-      contractName: "Error",
+  // In your analyze.js API handler's catch block
+} catch (error) {
+  console.error('Error in audit endpoint:', error);
+  const errorMessage = error.message || 'Unknown error occurred';
+  const isTimeout = errorMessage.includes('timed out');
+  
+  // Return a structured error response
+  return res.status(isTimeout ? 504 : 500).json({
+    success: false,
+    error: errorMessage,
+    address: req.body.address || '',
+    network: req.body.network || 'mainnet',
+    contractName: "Error",
+    contractType: "Unknown",
+    analysis: {
       contractType: "Unknown",
-      analysis: {
-        contractType: "Unknown",
-        overview: "An error occurred during analysis",
-        keyFeatures: [],
-        risks: [],
-        securityScore: 0,
-        riskLevel: "Unknown",
-        explanation: "Error: " + error.message
-      },
+      overview: isTimeout 
+        ? "The analysis timed out. This contract may be too complex or large to analyze quickly."
+        : "An error occurred during analysis",
+      keyFeatures: [],
+      risks: [],
       securityScore: 0,
       riskLevel: "Unknown",
-      isSafe: false
-    });
-  }
+      explanation: "Error: " + errorMessage
+    },
+    securityScore: 0,
+    riskLevel: "Unknown",
+    isSafe: false
+  });
+}
 }
