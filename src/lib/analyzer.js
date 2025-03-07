@@ -539,110 +539,63 @@ async function callAIModel(aiConfig, prompt) {
   try {
     console.log(`Calling AI API: ${aiConfig.endpoint}`);
     
-    // Check if API key is available
     if (!aiConfig.apiKey) {
-      console.warn(`No API key provided for ${aiConfig.endpoint}`);
       throw new Error("Missing API key");
     }
     
-    // Check if prompt is too long
-    if (prompt.length > 100000) {
-      console.warn("Prompt is very long, might exceed token limits");
-      prompt = prompt.substring(0, 90000) + "\n\n[Content truncated due to length]";
+    // Use a shorter prompt if too long
+    if (prompt.length > 50000) { // Make this even shorter for serverless
+      prompt = prompt.substring(0, 50000) + "\n\n[Content truncated for performance]";
     }
     
-    // Anthropic Claude API call
-    if (aiConfig.endpoint.includes('anthropic')) {
-      console.log(`Using Anthropic API with model: ${aiConfig.model}`);
-      
-      // Use a longer timeout for Vercel serverless functions
-      const controller = new AbortController();
-      const signal = controller.signal;
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
-      
-      try {
-        const response = await fetch(aiConfig.endpoint, {
-          method: 'POST',
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": aiConfig.apiKey,
-            "anthropic-version": "2023-06-01"
-          },
-          body: JSON.stringify({
-            model: aiConfig.model,
-            messages: [{ role: "user", content: prompt }],
-            max_tokens: 4000
-          }),
-          signal // Add the AbortController signal here
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Handle non-OK responses
-        if (!response.ok) {
-          const errorBody = await response.text();
-          console.error(`API request failed with status ${response.status}:`, errorBody);
-          throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
-        }
-        
-        const data = await response.json();
-        return data.content[0].text;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          throw new Error("API request timed out after 45 seconds");
-        }
-        throw error;
-      }
-    }
-    // OpenAI GPT API call
-    else if (aiConfig.endpoint.includes('openai')) {
-      console.log(`Using OpenAI API with model: ${aiConfig.model}`);
-      
+    // Add timeout control directly on the fetch call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
+    
+    try {
       const response = await fetch(aiConfig.endpoint, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${aiConfig.apiKey}`
+          "Authorization": `Bearer ${aiConfig.apiKey}`,
         },
         body: JSON.stringify({
           model: aiConfig.model,
           messages: [{ role: "user", content: prompt }],
           max_tokens: 4000,
           temperature: 0.2
-        })
+        }),
+        signal: controller.signal
       });
       
-      // Handle non-OK responses
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`API request failed with status ${response.status}:`, errorBody);
-        
-        throw new Error(`API request failed with status ${response.status}: ${errorBody.substring(0, 200)}`);
+        throw new Error(`API request failed with status ${response.status}`);
       }
       
       const data = await response.json();
       return data.choices[0].message.content;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-    
-    throw new Error("Unsupported AI provider");
   } catch (error) {
     console.error("AI API call failed:", error);
     
-    // Return a fallback response that won't break the application
+    // Return a valid JSON response to prevent parsing errors
     return JSON.stringify({
       findings: [
         {
-          title: "Static Analysis Only",
-          description: "AI analysis was not available. This is a static analysis only.",
+          title: "Analysis Timeout",
+          description: "The AI analysis timed out. This may be due to the contract's complexity or size.",
           severity: "INFO",
-          impact: "Limited analysis without AI capabilities",
-          recommendation: "Consider checking AI API configuration or try again later."
+          impact: "Unable to complete full AI analysis",
+          recommendation: "Try analyzing with static analysis only, or break down the contract into smaller parts."
         }
       ],
-      overallAssessment: "This is a limited analysis based on static code patterns only. AI-powered analysis was unavailable.",
-      securityScore: 60, // Neutral score
-      contractType: "Unknown" // Will be determined by other functions
+      overallAssessment: "Analysis terminated due to timeout.",
+      securityScore: 50
     });
   }
 }
