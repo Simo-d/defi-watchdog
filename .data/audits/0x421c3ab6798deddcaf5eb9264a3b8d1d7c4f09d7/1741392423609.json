@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "address": "0x421c3ab6798deddCAf5EB9264a3b8D1D7c4f09d7",
+  "network": "sepolia",
+  "contractName": "Proxy",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.15+commit.e14f2714",
+  "analysis": {
+    "overview": "AI response format was not as expected",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "The AI analysis provides a list of key functions in the contracts but does not provide a clear analysis or assessment of security vulnerabilities. It also mentions that it was unable to properly parse the response. As such, a manual review is necessary to determine the actual security posture of the smart contract.",
+        "codeReference": "See full report",
+        "impact": "Unable to provide a detailed security analysis",
+        "recommendation": "Review the smart contract manually for security vulnerabilities"
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 75,
+    "riskLevel": "Low Risk",
+    "explanation": "AI response format was not as expected",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 75,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "11.88s",
+  "timestamp": "2025-03-08T00:07:03.601Z",
+  "_id": "ec649d06-a299-47f4-b904-0f1ec0435a46",
+  "createdAt": "2025-03-08T00:07:03.609Z"
+}

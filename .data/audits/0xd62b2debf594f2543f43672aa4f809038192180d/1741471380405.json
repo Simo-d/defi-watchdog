@@ -1,0 +1,29 @@
+{
+  "success": false,
+  "address": "0xd62b2dEbF594F2543f43672AA4F809038192180d",
+  "network": "sonic",
+  "contractName": "Contract-0xd62b2d",
+  "contractType": "Unverified Contract",
+  "compiler": "Unknown",
+  "analysis": {
+    "contractType": "Unverified Contract",
+    "overview": "Contract source code is not verified or available",
+    "keyFeatures": [],
+    "implementationDetails": {},
+    "risks": [],
+    "securityConsiderations": {},
+    "securityScore": 0,
+    "riskLevel": "Unknown",
+    "explanation": "This contract does not have verified source code available. Consider using a verified contract or verify this contract on the blockchain explorer.",
+    "codeQuality": {}
+  },
+  "securityScore": 0,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Unknown",
+  "isSafe": false,
+  "analysisTime": "0s",
+  "error": "Contract source code not verified or available",
+  "timestamp": "2025-03-08T22:03:00.382Z",
+  "_id": "7fa1818a-7fac-42ca-afbc-906f2b41c28a",
+  "createdAt": "2025-03-08T22:03:00.404Z"
+}

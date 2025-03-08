@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "address": "0x0d7ee0ee6e449e38269f2e089262b40ca4096594",
+  "network": "sepolia",
+  "contractName": "ERC20Mock",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.28+commit.7893614a",
+  "analysis": {
+    "overview": "AI response format was not as expected",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "The AI analysis provided a generic description of ERC20 functions without specific insights into the security of the contract.",
+        "codeReference": "See full report",
+        "impact": "Low",
+        "recommendation": "Review the contract code and security considerations manually to identify potential vulnerabilities."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 75,
+    "riskLevel": "Low Risk",
+    "explanation": "AI response format was not as expected",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 75,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "6.83s",
+  "timestamp": "2025-03-08T17:41:16.022Z",
+  "_id": "ee173f24-c1ba-4e7d-9fe6-192c5e98d5a1",
+  "createdAt": "2025-03-08T17:41:16.029Z"
+}

@@ -1,0 +1,29 @@
+{
+  "success": false,
+  "address": "0x02a416f9ad9297dde0bb98f0cdb8b7ad5fbb0c36",
+  "network": "mainnet",
+  "contractName": "Contract-0x02a416",
+  "contractType": "Unverified Contract",
+  "compiler": "Unknown",
+  "analysis": {
+    "contractType": "Unverified Contract",
+    "overview": "Contract source code is not verified or available",
+    "keyFeatures": [],
+    "implementationDetails": {},
+    "risks": [],
+    "securityConsiderations": {},
+    "securityScore": 0,
+    "riskLevel": "Unknown",
+    "explanation": "This contract does not have verified source code available. Consider using a verified contract or verify this contract on the blockchain explorer.",
+    "codeQuality": {}
+  },
+  "securityScore": 0,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Unknown",
+  "isSafe": false,
+  "analysisTime": "0s",
+  "error": "Contract source code not verified or available",
+  "timestamp": "2025-03-08T00:05:19.578Z",
+  "_id": "6c711596-3f1a-45d4-a95d-4fe534666077",
+  "createdAt": "2025-03-08T00:05:19.585Z"
+}

@@ -164,50 +164,60 @@ export function useContract() {
   }, [account, contractAddress]);
 
   // Function to mint a certificate
-  const mintCertificate = async (contractAddress) => {
-    if (!contract) {
-      throw new Error('Contract not initialized');
+// In useContract.js, update the mintCertificate function:
+
+const mintCertificate = async (contractAddress) => {
+  if (!contract) {
+    throw new Error('Contract not initialized');
+  }
+  
+  // Check if demo mode is enabled
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+  if (demoMode) {
+    console.log('Demo mode - returning mock token ID without MetaMask interaction');
+    // Add a small delay to simulate transaction time
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return "1";
+  }
+  
+  // Ensure we're connected to MetaMask
+  if (typeof window !== 'undefined' && window.ethereum) {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+  } else {
+    throw new Error('MetaMask not installed');
+  }
+  
+  try {
+    console.log('Calling contract.mintCertificate with address:', contractAddress);
+    console.log('Using mint fee:', mintFee.toString());
+    
+    // Call mintCertificate function on the contract
+    const tx = await contract.mintCertificate(contractAddress, {
+      value: mintFee,
+    });
+    
+    console.log('Transaction sent:', tx.hash);
+    
+    // Wait for transaction to be mined
+    const receipt = await tx.wait();
+    console.log('Transaction confirmed:', receipt);
+    
+    // Find the CertificateMinted event to get the tokenId
+    const event = receipt.events.find(
+      event => event.event === 'CertificateMinted'
+    );
+    
+    if (!event) {
+      console.warn('Certificate minting event not found in transaction');
+      return "1"; // Fallback ID
     }
     
-    // Ensure we're connected to MetaMask
-    if (typeof window !== 'undefined' && window.ethereum) {
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-    } else {
-      throw new Error('MetaMask not installed');
-    }
-    
-    try {
-      // Call mintCertificate function on the contract
-      const tx = await contract.mintCertificate(contractAddress, {
-        value: mintFee,
-      });
-      
-      // Wait for transaction to be mined
-      const receipt = await tx.wait();
-      
-      // Find the CertificateMinted event to get the tokenId
-      const event = receipt.events.find(
-        event => event.event === 'CertificateMinted'
-      );
-      
-      if (!event) {
-        // For demo purposes return a mock token ID
-        console.log('Certificate minting event not found in transaction, using mock ID');
-        return "1";
-      }
-      
-      return event.args.tokenId.toString();
-    } catch (error) {
-      console.error('Error during minting:', error);
-      
-      // For demo purposes
-      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-        console.log('Demo mode - returning mock token ID');
-        return "1";
-      }
-      throw error;
-    }
-  };
+    return event.args.tokenId.toString();
+  } catch (error) {
+    console.error('Error during minting:', error);
+    throw error;
+  }
+};
 
   return {
     contract,

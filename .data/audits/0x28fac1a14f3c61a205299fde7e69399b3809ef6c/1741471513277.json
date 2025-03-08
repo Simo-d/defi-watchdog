@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "address": "0x28fac1a14f3c61a205299fde7e69399b3809ef6c",
+  "network": "sonic",
+  "contractName": "GaugeV2_CL",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.13+commit.abaa5c0e",
+  "analysis": {
+    "overview": "AI response format was not as expected",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "The key functions of this contract include:\n\n1. Receiving bribes from users.\n2. Distributing rewards to users based on the amount of bribes received.\n3. Managing the governance of the contract through ownership control.\n4. Implementing reentrancy protection to prevent reentrancy attacks.\n5. Interacting with ERC20 tokens and permits for token transfers.\n6. Storing and updating pair information for the contract.\n7. Implementing various settings and configurations for the contract.\n8. Ensuring proper security measures are in place to protect user funds and contract integrity.",
+        "codeReference": "See full report",
+        "impact": "Could affect contract operations",
+        "recommendation": "Review and fix the issue"
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "Implements nonReentrant modifiers on critical functions.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 75,
+    "riskLevel": "Low Risk",
+    "explanation": "AI response format was not as expected",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 75,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "6.92s",
+  "timestamp": "2025-03-08T22:05:13.269Z",
+  "_id": "f6a0ee50-8beb-4ad5-a9ef-e5cf28122f96",
+  "createdAt": "2025-03-08T22:05:13.276Z"
+}

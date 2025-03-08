@@ -7,27 +7,15 @@ function getEtherscanBaseUrl(network) {
   switch (network.toLowerCase()) {
     case 'mainnet':
       return 'https://api.etherscan.io';
-    case 'goerli':
-      return 'https://api-goerli.etherscan.io';
-    case 'sepolia':
-      return 'https://api-sepolia.etherscan.io';
-    case 'polygon':
-      return 'https://api.polygonscan.com';
-    case 'arbitrum':
-      return 'https://api.arbiscan.io';
-    case 'optimism':
-      return 'https://api-optimistic.etherscan.io';
-    case 'linea-mainnet':
-      return 'https://api.lineascan.build';
-    case 'linea-sepolia':
-      return 'https://api-sepolia.lineascan.build';
+    case 'sonic':
+      return 'https://api.sonicscan.org'; // Sonic API base URL
     default:
       return 'https://api.etherscan.io';
   }
 }
 function getApiKey(network) {
-  if (network.includes('linea')) {
-    return process.env.LINEASCAN_API_KEY; // Use LineaScan API key
+  if (network.toLowerCase() === 'sonic') {
+    return process.env.SONICSCAN_API_KEY; // Use SonicScan API key
   }
   return process.env.ETHERSCAN_API_KEY; // Use Etherscan API key
 }
@@ -241,29 +229,8 @@ export function getEtherscanUrl(address, network = 'mainnet') {
     case 'mainnet':
       baseUrl = 'https://etherscan.io';
       break;
-    case 'goerli':
-      baseUrl = 'https://goerli.etherscan.io';
-      break;
-    case 'sepolia':
-      baseUrl = 'https://sepolia.etherscan.io';
-      break;
-    case 'polygon':
-      baseUrl = 'https://polygonscan.com';
-      break;
-    case 'arbitrum':
-      baseUrl = 'https://arbiscan.io';
-      break;
-    case 'optimism':
-      baseUrl = 'https://optimistic.etherscan.io';
-      break;
-    case 'linea-mainnet':
-      baseUrl = 'https://lineascan.build';
-      break;
-    case 'linea-testnet':
-      baseUrl = 'https://goerli.lineascan.build';
-      break;
-    case 'linea-sepolia':
-      baseUrl = 'https://sepolia.lineascan.build';
+    case 'sonic':
+      baseUrl = 'https://sonicscan.org';
       break;
     default:
       baseUrl = 'https://etherscan.io';

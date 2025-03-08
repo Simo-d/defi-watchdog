@@ -1,0 +1,87 @@
+{
+  "success": true,
+  "address": "0x9228665c0d8f9fc36843572be50b716b81e042ba",
+  "network": "sepolia",
+  "contractName": "L1ChugSplashProxy",
+  "contractType": "Proxy / Upgradeable",
+  "compiler": "v0.8.15+commit.e14f2714",
+  "analysis": {
+    "overview": "The contract exhibits some minor vulnerabilities and design issues that should be addressed to enhance security.",
+    "contractType": "Proxy / Upgradeable",
+    "keyFeatures": [
+      "Custom token functionality",
+      "Application-specific logic"
+    ],
+    "implementationDetails": {
+      "standard": "Proxy pattern",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "MEDIUM",
+        "description": "The contract has owner functionality, which can pose centralization risks if not properly managed.",
+        "codeReference": "Affected code identified",
+        "impact": "Centralization risks if the owner has excessive control over the contract.",
+        "recommendation": "Implement multi-signature or decentralized ownership mechanisms to mitigate centralization risks. Clearly define and enforce ownership control mechanisms."
+      },
+      {
+        "severity": "LOW",
+        "description": "Miners can manipulate timestamps slightly, leading to potential front-running attacks or other timestamp-dependent vulnerabilities.",
+        "codeReference": "Affected code identified",
+        "impact": "Could allow miners to exploit time-dependent functions in the contract.",
+        "recommendation": "Consider using block.number instead of block.timestamp for critical operations."
+      },
+      {
+        "severity": "INFO",
+        "description": "Assembly code is used, which bypasses Solidity safety features and requires careful auditing.",
+        "codeReference": "Affected code identified",
+        "impact": "Increases complexity and potential for errors in the contract.",
+        "recommendation": "Avoid using assembly unless absolutely necessary and ensure thorough testing and auditing."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 84,
+    "riskLevel": "Low Risk",
+    "explanation": "The contract exhibits some minor vulnerabilities and design issues that should be addressed to enhance security.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 1
+    }
+  },
+  "securityScore": 84,
+  "riskyCodeSnippets": [
+    {
+      "title": "Owner Functionality",
+      "code": "modifier proxyCallIfNotOwner() { ... }",
+      "explanation": "The contract has owner functionality, which can pose centralization risks if not properly managed.",
+      "lineNumbers": [
+        53
+      ]
+    }
+  ],
+  "riskLevel": "Low Risk",
+  "isSafe": true,
+  "analysisTime": "9.88s",
+  "timestamp": "2025-03-08T00:09:44.811Z",
+  "_id": "23093e17-ee28-4484-a11f-13ea18d345e4",
+  "createdAt": "2025-03-08T00:09:44.819Z"
+}

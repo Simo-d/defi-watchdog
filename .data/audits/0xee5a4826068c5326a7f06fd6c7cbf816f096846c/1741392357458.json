@@ -1,0 +1,64 @@
+{
+  "success": true,
+  "address": "0xeE5a4826068C5326a7f06fD6c7cBf816F096846c",
+  "network": "sepolia",
+  "contractName": "UpgradeableProxy",
+  "contractType": "Proxy / Upgradeable",
+  "compiler": "v0.8.24+commit.e11b9ed9",
+  "analysis": {
+    "overview": "AI response format was not as expected",
+    "contractType": "Proxy / Upgradeable",
+    "keyFeatures": [
+      "Custom token functionality",
+      "Application-specific logic"
+    ],
+    "implementationDetails": {
+      "standard": "Proxy pattern",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "The AI analysis did not specifically analyze the security findings within the provided smart contract code. A detailed security analysis is required to identify potential vulnerabilities and ensure the contract's security.",
+        "codeReference": "See full report",
+        "impact": "Incomplete security analysis",
+        "recommendation": "Conduct a detailed security analysis of the smart contract code to identify and address any potential vulnerabilities."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 75,
+    "riskLevel": "Low Risk",
+    "explanation": "AI response format was not as expected",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 75,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "10.87s",
+  "timestamp": "2025-03-08T00:05:57.448Z",
+  "_id": "69733e64-c664-4e1b-b584-09b5777869a5",
+  "createdAt": "2025-03-08T00:05:57.457Z"
+}

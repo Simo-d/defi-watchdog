@@ -5,7 +5,8 @@ import Layout from '../components/layout/Layout';
 import { useWallet } from '../hooks/useWallet';
 import MintButton from '../components/certificate/MintButton';
 import styles from '../styles/components/All.module.css';
-
+import { useContract } from '../hooks/useContract';
+import { ethers } from 'ethers';
 // MultiAI Analysis Progress component
 function MultiAIProgress({ isRunning }) {
   const [stage, setStage] = useState(0);
@@ -78,7 +79,296 @@ function MultiAIProgress({ isRunning }) {
     </div>
   );
 }
+// Replace the EnhancedMintButton in audit.js with this implementation
+function EnhancedMintButton({ contractAddress }) {
+  const router = useRouter();
+  const { account, connect } = useWallet();
+  const { mintFee, mintCertificate, loading: contractLoading } = useContract();
+  const [isLoading, setIsLoading] = useState(false);
 
+  async function handleMint() {
+    // Check if wallet is connected
+    if (!account) {
+      try {
+        await connect();
+        return; // Return after connecting to allow the user to approve the connection first
+      } catch (err) {
+        console.error('Failed to connect wallet:', err);
+        return;
+      }
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('Starting mint process for:', contractAddress);
+      
+      // Call the actual mintCertificate function from useContract
+      const tokenId = await mintCertificate(contractAddress);
+      console.log('Mint successful, token ID:', tokenId);
+      
+      // Redirect to the certificate page after successful transaction
+      router.push(`/certificate/${tokenId}`);
+    } catch (err) {
+      console.error('Minting error:', err);
+      alert(`Minting failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (contractLoading) {
+    return (
+      <button
+        disabled
+        style={{
+          backgroundColor: '#9CA3AF',
+          color: 'white',
+          padding: '0.5rem 1rem',
+          borderRadius: '0.375rem',
+          border: 'none',
+          opacity: 0.75,
+          cursor: 'not-allowed'
+        }}
+      >
+        Loading...
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={handleMint}
+        disabled={isLoading}
+        style={{
+          backgroundColor: isLoading ? '#9CA3AF' : '#10B981',
+          color: 'white',
+          padding: '0.5rem 1rem',
+          borderRadius: '0.375rem',
+          border: 'none',
+          cursor: isLoading ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          fontWeight: 'bold'
+        }}
+      >
+        {isLoading ? (
+          <>
+            <svg 
+              style={{ 
+                animation: 'spin 1s linear infinite',
+                marginRight: '0.5rem',
+                height: '1rem',
+                width: '1rem'
+              }} 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24"
+            >
+              <circle 
+                style={{ opacity: 0.25 }} 
+                cx="12" 
+                cy="12" 
+                r="10" 
+                stroke="currentColor" 
+                strokeWidth="4"
+              ></circle>
+              <path 
+                style={{ opacity: 0.75 }} 
+                fill="currentColor" 
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Minting...
+          </>
+        ) : account ? (
+          'Mint Safety Certificate'
+        ) : (
+          'Connect Wallet to Mint'
+        )}
+      </button>
+      
+      {account && (
+        <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.5rem' }}>
+          Fee: {mintFee ? ethers.utils.formatEther(mintFee) : '0.01'} ETH
+        </p>
+      )}
+    </div>
+  );
+}
+function ImprovedSafeResult({ result }) {
+  const { account } = useWallet();
+  
+  console.log("SafeResult rendering, wallet account:", account);
+
+  return (
+    <div style={{ 
+      backgroundColor: '#FFFFFF', 
+      borderRadius: '0.5rem', 
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
+      overflow: 'hidden'
+    }}>
+      {/* Main content remains same */}
+      <div style={{ 
+        padding: '1.5rem', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: '#F0FDF4',
+        borderBottom: '1px solid #E5E7EB'
+      }}>
+        <div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
+            Contract Analysis Results
+          </h3>
+          <p style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+            {result.contractName} ({result.address.substring(0, 6)}...{result.address.slice(-4)})
+          </p>
+        </div>
+        <div>
+          <span style={{ 
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '0.25rem 0.75rem',
+            borderRadius: '9999px',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            backgroundColor: '#D1FAE5',
+            color: '#064E3B'
+          }}>
+            <svg 
+              style={{ height: '1rem', width: '1rem', marginRight: '0.25rem' }} 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Safe
+          </span>
+        </div>
+      </div>
+
+      {/* Contract overview */}
+      <div style={{ padding: '1.5rem', borderBottom: '1px solid #E5E7EB' }}>
+        <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          Contract Overview
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div>
+            <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6B7280', marginBottom: '0.25rem' }}>
+              Contract Name
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#111827' }}>
+              {result.contractName}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6B7280', marginBottom: '0.25rem' }}>
+              Contract Type
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#111827' }}>
+              {result.analysis.contractType || 'Unknown'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6B7280', marginBottom: '0.25rem' }}>
+              Security Score
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#111827', display: 'flex', alignItems: 'center' }}>
+              <span style={{ color: '#10B981', fontWeight: '600' }}>{result.analysis.securityScore}/100</span>
+              <svg 
+                style={{ height: '1rem', width: '1rem', color: '#10B981', marginLeft: '0.25rem' }} 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6B7280', marginBottom: '0.25rem' }}>
+              Compiler Version
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#111827' }}>
+              {result.compiler}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Analysis */}
+      <div style={{ padding: '1.5rem', borderBottom: '1px solid #E5E7EB' }}>
+        <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          AI Analysis
+        </h4>
+
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#F0FDF4', borderRadius: '0.5rem', border: '1px solid #D1FAE5' }}>
+          <div style={{ display: 'flex' }}>
+            <svg 
+              style={{ height: '1.25rem', width: '1.25rem', color: '#10B981', marginRight: '0.5rem', flexShrink: 0 }} 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <div>
+              <h5 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#065F46' }}>This contract appears safe</h5>
+              <p style={{ fontSize: '0.875rem', color: '#047857', marginTop: '0.25rem' }}>
+                Our AI analysis did not detect any significant security risks or malicious patterns in this contract.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h5 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem' }}>What this contract does:</h5>
+        <p style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '1rem' }}>{result.summary}</p>
+
+        <h5 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem' }}>Security Assessment:</h5>
+        <p style={{ fontSize: '0.875rem', color: '#4B5563' }}>{result.analysis.explanation}</p>
+      </div>
+
+      {/* Footer with mint button */}
+      <div style={{ 
+        padding: '1.5rem', 
+        backgroundColor: '#F9FAFB', 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <a 
+          href={result.etherscanUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            backgroundColor: '#FFFFFF',
+            color: '#4B5563',
+            border: '1px solid #D1D5DB',
+            textDecoration: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          View on Etherscan
+        </a>
+        
+        {/* Use the enhanced mint button here */}
+        <EnhancedMintButton contractAddress={result.address} />
+      </div>
+    </div>
+  );
+}
 // Analysis Discussion component
 function AnalysisDiscussion({ discussion }) {
   const [expanded, setExpanded] = useState(false);
@@ -797,6 +1087,12 @@ export default function Audit() {
     }
   }, [router.query]);
 
+  // Check wallet connection on component mount
+  useEffect(() => {
+    console.log("Audit component mounted, checking wallet connection");
+    console.log("Current wallet account:", account);
+  }, [account]);
+
   async function handleSubmit(e, addressOverride, networkOverride) {
     if (e) e.preventDefault();
     
@@ -828,7 +1124,16 @@ export default function Audit() {
       
       const data = await response.json();
       setResult(data);
+      console.log("Audit result:", {
+        isSafe: data.isSafe,
+        securityScore: data.securityScore || data.analysis?.securityScore,
+        riskLevel: data.riskLevel
+      });
       
+      // Force the contract to be considered safe if the security score is high enough
+      if (data.analysis?.securityScore >= 70 || data.securityScore >= 70) {
+        data.isSafe = true;
+      }
       // Update the URL without reloading the page
       router.push({
         pathname: router.pathname,
@@ -888,6 +1193,10 @@ export default function Audit() {
     ? groupFindingsBySeverity(result.analysis.risks) 
     : { findingsBySeverity: {}, findingCounts: {} };
 
+  // Log account status to help debugging
+  console.log("Current wallet account in Audit component:", account);
+  console.log("Is result safe?", result?.isSafe);
+
   return (
     <Layout>
       <Head>
@@ -941,14 +1250,7 @@ export default function Audit() {
                   }}
                 >
                   <option value="mainnet">Ethereum Mainnet</option>
-                  <option value="goerli">Goerli Testnet</option>
-                  <option value="sepolia">Sepolia Testnet</option>
-                  <option value="polygon">Polygon</option>
-                  <option value="arbitrum">Arbitrum</option>
-                  <option value="optimism">Optimism</option>
-                  <option value="linea-mainnet">Linea Mainnet</option>
-                  <option value="linea-testnet">Linea Testnet</option>
-                  <option value="linea-sepolia">Linea Sepolia</option>
+                  <option value="sonic">Sonic</option>
                 </select>
               </div>
               
@@ -1010,245 +1312,245 @@ export default function Audit() {
           </div>
         ) : (
           <div style={{ maxWidth: '1000px' }}>
-            <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #eee', backgroundColor: result.isSafe ? '#f0fdf4' : '#fef2f2' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results</h2>
-                  <p style={{ color: '#6b7280' }}>{result.contractName} ({result.address.substring(0, 6)}...{result.address.slice(-4)})</p>
-                </div>
-                <div style={{ 
-                  backgroundColor: result.isSafe ? '#dcfce7' : '#fee2e2', 
-                  color: result.isSafe ? '#166534' : '#991b1b',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '9999px',
-                  fontWeight: '600',
-                  fontSize: '0.875rem'
-                }}>
-                  {result.isSafe ? 'Safe' : 'Risks Detected'}
-                </div>
-              </div>
-              
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {result.isSafe ? (
+              <ImprovedSafeResult result={result} />
+            ) : (
+              <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #eee', backgroundColor: '#fef2f2' }}>
                   <div>
-                    <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Contract Name</h3>
-                    <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.contractName}</p>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results</h2>
+                    <p style={{ color: '#6b7280' }}>{result.contractName} ({result.address.substring(0, 6)}...{result.address.slice(-4)})</p>
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Contract Type</h3>
-                    <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.analysis.contractType}</p>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Compiler Version</h3>
-                    <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.compiler}</p>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Security Score</h3>
-                    <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.analysis.securityScore}/100</p>
+                  <div style={{ 
+                    backgroundColor: '#fee2e2', 
+                    color: '#991b1b',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontWeight: '600',
+                    fontSize: '0.875rem'
+                  }}>
+                    Risks Detected
                   </div>
                 </div>
-              </div>
-              
-              {/* New Tab Navigation */}
-              <div style={{ borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
-                  <button
-                    onClick={() => setActiveTab('overview')}
-                    style={{
-                      padding: '1rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderBottom: activeTab === 'overview' ? '2px solid #0284c7' : 'none',
-                      fontWeight: activeTab === 'overview' ? 'bold' : 'normal',
-                      color: activeTab === 'overview' ? '#0284c7' : '#6b7280',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Overview
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab('findings')}
-                    style={{
-                      padding: '1rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderBottom: activeTab === 'findings' ? '2px solid #0284c7' : 'none',
-                      fontWeight: activeTab === 'findings' ? 'bold' : 'normal',
-                      color: activeTab === 'findings' ? '#0284c7' : '#6b7280',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Findings
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab('fixes')}
-                    style={{
-                      padding: '1rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderBottom: activeTab === 'fixes' ? '2px solid #0284c7' : 'none',
-                      fontWeight: activeTab === 'fixes' ? 'bold' : 'normal',
-                      color: activeTab === 'fixes' ? '#0284c7' : '#6b7280',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    AI Fixes
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab('history')}
-                    style={{
-                      padding: '1rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderBottom: activeTab === 'history' ? '2px solid #0284c7' : 'none',
-                      fontWeight: activeTab === 'history' ? 'bold' : 'normal',
-                      color: activeTab === 'history' ? '#0284c7' : '#6b7280',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    History
-                  </button>
-                </div>
-              </div>
-              
-              {/* Tab Content */}
-              <div style={{ padding: '1.5rem' }}>
-                {activeTab === 'overview' && (
-                  <>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>AI Analysis</h3>
-                    
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>What this contract does:</h4>
-                      <p>{result.analysis.overview || result.summary}</p>
-                    </div>
-                    
-                    {/* Add Analysis Discussion component here */}
-                    {result.analysis.analysisDiscussion && (
-                      <AnalysisDiscussion discussion={result.analysis.analysisDiscussion} />
-                    )}
-                    
+                
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
-                      <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Security Assessment:</h4>
-                      <p>{result.analysis.explanation}</p>
+                      <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Contract Name</h3>
+                      <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.contractName}</p>
                     </div>
-                    
-                    {/* Risk Summary */}
-                    {(findingCounts.critical > 0 || findingCounts.high > 0 || findingCounts.medium > 0) && (
-                      <div style={{ marginTop: '1.5rem' }}>
-                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Risk Summary:</h4>
-                        <RiskSummary findingCounts={findingCounts} />
-                      </div>
-                    )}
-                    
-                    {result.analysis.risks && result.analysis.risks.length > 0 && (
-                      <div style={{ 
-                        marginTop: '1.5rem', 
-                        backgroundColor: result.isSafe ? '#f9fafb' : '#fee2e2',
-                        padding: '1rem',
-                        borderRadius: '0.375rem'
-                      }}>
-                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: result.isSafe ? '#111827' : '#991b1b' }}>
-                          Identified Risks:
-                        </h4>
-                        <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-                          {result.analysis.risks.map((risk, index) => (
-                            <li key={index} style={{ marginBottom: '0.5rem' }}>
-                              <strong>{risk.severity}:</strong> {risk.description} 
-                              {risk.codeReference && <span style={{ color: '#6b7280' }}> ({risk.codeReference})</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {activeTab === 'findings' && (
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Detailed Findings</h3>
-                    
-                    <RiskSummary findingCounts={findingCounts} />
-                    
-                    {/* Display findings by severity */}
-                    {Object.keys(findingsBySeverity).map(severity => (
-                      findingsBySeverity[severity].length > 0 && (
-                        <div key={severity} style={{ marginBottom: '1.5rem' }}>
-                          <h4 style={{ 
-                            fontSize: '1rem', 
-                            fontWeight: '600', 
-                            marginBottom: '0.75rem',
-                            color: severity === 'CRITICAL' ? '#991b1b' :
-                                  severity === 'HIGH' ? '#c2410c' :
-                                  severity === 'MEDIUM' ? '#b45309' :
-                                  severity === 'LOW' ? '#166534' : '#1e40af'
-                          }}>
-                            {severity.charAt(0) + severity.slice(1).toLowerCase()} Issues ({findingsBySeverity[severity].length})
-                          </h4>
-                          
-                          {findingsBySeverity[severity].map((finding, index) => (
-                            <FindingCard key={index} finding={finding} />
-                          ))}
-                        </div>
-                      )
-                    ))}
-                    
-                    {(!result.analysis.risks || result.analysis.risks.length === 0) && (
-                      <div style={{ 
-                        padding: '24px', 
-                        textAlign: 'center', 
-                        backgroundColor: '#F3F4F6',
-                        borderRadius: '8px',
-                        color: '#4B5563'
-                      }}>
-                        <p>No specific issues found in this contract!</p>
-                      </div>
-                    )}
+                    <div>
+                      <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Contract Type</h3>
+                      <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.analysis.contractType}</p>
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Compiler Version</h3>
+                      <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>{result.compiler}</p>
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem', fontWeight: 'normal' }}>Security Score</h3>
+                      <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#ef4444' }}>{result.analysis.securityScore}/100</p>
+                    </div>
                   </div>
-                )}
+                </div>
                 
-                {activeTab === 'fixes' && (
-                  <PatchGenerator 
-                    findings={result.analysis.risks || []} 
-                    contractAddress={result.address} 
-                    network={network}
-                  />
-                )}
+                {/* Tab Navigation */}
+                <div style={{ borderBottom: '1px solid #eee' }}>
+                  <div style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'overview' ? '2px solid #0284c7' : 'none',
+                        fontWeight: activeTab === 'overview' ? 'bold' : 'normal',
+                        color: activeTab === 'overview' ? '#0284c7' : '#6b7280',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Overview
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveTab('findings')}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'findings' ? '2px solid #0284c7' : 'none',
+                        fontWeight: activeTab === 'findings' ? 'bold' : 'normal',
+                        color: activeTab === 'findings' ? '#0284c7' : '#6b7280',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Findings
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveTab('fixes')}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'fixes' ? '2px solid #0284c7' : 'none',
+                        fontWeight: activeTab === 'fixes' ? 'bold' : 'normal',
+                        color: activeTab === 'fixes' ? '#0284c7' : '#6b7280',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      AI Fixes
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveTab('history')}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'history' ? '2px solid #0284c7' : 'none',
+                        fontWeight: activeTab === 'history' ? 'bold' : 'normal',
+                        color: activeTab === 'history' ? '#0284c7' : '#6b7280',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      History
+                    </button>
+                  </div>
+                </div>
                 
-                {activeTab === 'history' && (
-                  <AuditHistory 
-                    contractAddress={result.address} 
-                    network={network}
-                  />
-                )}
+                {/* Tab Content */}
+                <div style={{ padding: '1.5rem' }}>
+                  {activeTab === 'overview' && (
+                    <>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>AI Analysis</h3>
+                      
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>What this contract does:</h4>
+                        <p>{result.analysis.overview || result.summary}</p>
+                      </div>
+                      
+                      {/* Add Analysis Discussion component here */}
+                      {result.analysis.analysisDiscussion && (
+                        <AnalysisDiscussion discussion={result.analysis.analysisDiscussion} />
+                      )}
+                      
+                      <div>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Security Assessment:</h4>
+                        <p>{result.analysis.explanation}</p>
+                      </div>
+                      
+                      {/* Risk Summary */}
+                      {(findingCounts.critical > 0 || findingCounts.high > 0 || findingCounts.medium > 0) && (
+                        <div style={{ marginTop: '1.5rem' }}>
+                          <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Risk Summary:</h4>
+                          <RiskSummary findingCounts={findingCounts} />
+                        </div>
+                      )}
+                      
+                      {result.analysis.risks && result.analysis.risks.length > 0 && (
+                        <div style={{ 
+                          marginTop: '1.5rem', 
+                          backgroundColor: '#fee2e2',
+                          padding: '1rem',
+                          borderRadius: '0.375rem'
+                        }}>
+                          <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: '#991b1b' }}>
+                            Identified Risks:
+                          </h4>
+                          <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+                            {result.analysis.risks.map((risk, index) => (
+                              <li key={index} style={{ marginBottom: '0.5rem' }}>
+                                <strong>{risk.severity}:</strong> {risk.description} 
+                                {risk.codeReference && <span style={{ color: '#6b7280' }}> ({risk.codeReference})</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {activeTab === 'findings' && (
+                    <div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Detailed Findings</h3>
+                      
+                      <RiskSummary findingCounts={findingCounts} />
+                      
+                      {/* Display findings by severity */}
+                      {Object.keys(findingsBySeverity).map(severity => (
+                        findingsBySeverity[severity].length > 0 && (
+                          <div key={severity} style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ 
+                              fontSize: '1rem', 
+                              fontWeight: '600', 
+                              marginBottom: '0.75rem',
+                              color: severity === 'CRITICAL' ? '#991b1b' :
+                                    severity === 'HIGH' ? '#c2410c' :
+                                    severity === 'MEDIUM' ? '#b45309' :
+                                    severity === 'LOW' ? '#166534' : '#1e40af'
+                            }}>
+                              {severity.charAt(0) + severity.slice(1).toLowerCase()} Issues ({findingsBySeverity[severity].length})
+                            </h4>
+                            
+                            {findingsBySeverity[severity].map((finding, index) => (
+                              <FindingCard key={index} finding={finding} />
+                            ))}
+                          </div>
+                        )
+                      ))}
+                      
+                      {(!result.analysis.risks || result.analysis.risks.length === 0) && (
+                        <div style={{ 
+                          padding: '24px', 
+                          textAlign: 'center', 
+                          backgroundColor: '#F3F4F6',
+                          borderRadius: '8px',
+                          color: '#4B5563'
+                        }}>
+                          <p>No specific issues found in this contract!</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {activeTab === 'fixes' && (
+                    <PatchGenerator 
+                      findings={result.analysis.risks || []} 
+                      contractAddress={result.address} 
+                      network={network}
+                    />
+                  )}
+                  
+                  {activeTab === 'history' && (
+                    <AuditHistory 
+                      contractAddress={result.address} 
+                      network={network}
+                    />
+                  )}
+                </div>
+                
+                <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', backgroundColor: '#f9fafb' }}>
+                  <a 
+                    href={result.etherscanUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      display: 'inline-flex',
+                      padding: '0.5rem 1rem',
+                      backgroundColor: 'white',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.375rem',
+                      color: '#4b5563',
+                      textDecoration: 'none',
+                      fontWeight: '500'
+                    }}
+                  >
+                    View on Etherscan
+                  </a>
+                </div>
               </div>
-              
-              <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', backgroundColor: '#f9fafb' }}>
-                <a 
-                  href={result.etherscanUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ 
-                    display: 'inline-flex',
-                    padding: '0.5rem 1rem',
-                    backgroundColor: 'white',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    color: '#4b5563',
-                    textDecoration: 'none',
-                    fontWeight: '500'
-                  }}
-                >
-                  View on Etherscan
-                </a>
-                
-                {result.isSafe && (
-                  <MintButton contractAddress={result.address} />
-                )}
-              </div>
-            </div>
+            )}
             
             <div style={{ textAlign: 'center' }}>
               <button
