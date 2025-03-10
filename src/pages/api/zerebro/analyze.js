@@ -6,7 +6,7 @@ import { auditSmartContract } from '../../../lib/analyzer';
 // Active requests tracking
 const activeRequests = new Map();
 export const config = {
-  maxDuration: 90 // 90 seconds maximum duration for this endpoint (Sonic analysis may take longer)
+  maxDuration: 60 // 90 seconds maximum duration for this endpoint (Sonic analysis may take longer)
 };
 
 export default async function handler(req, res) {
