@@ -1,4 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DeFi Watchdog - Smart Contract Security Guardian for Sonic Blockchain
+
+
+1. **Focus on Sonic Ecosystem**: Our project is built specifically for the Sonic blockchain, utilizing its high TPS and sub-second finality for responsive contract analysis.
+
+2. **Autonomous Agent**: We've integrated with the ZerePy framework to create an autonomous agent that monitors and analyzes contracts without user intervention.
+
+3. **DeFAI Integration**: Our solution combines blockchain data with AI analysis to provide intelligent security insights.
+
+4. **Social & On-Chain Actions**: The agent performs both on-chain actions (contract analysis) and social actions (community alerts).
+
+## Key Features
+
+- Real-time contract security analysis
+- Gas optimization suggestions specific to Sonic
+- Autonomous monitoring of deployed contracts
+- Community alerts for vulnerability detection
+- Dashboard with ecosystem insights
+
+
+
+
 
 ## Getting Started
 
@@ -34,3 +55,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

@@ -34,6 +34,7 @@ export function useContract() {
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [walletAvailable, setWalletAvailable] = useState(false);
 
   // Get contract address from environment variable
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
@@ -43,181 +44,195 @@ export function useContract() {
       try {
         // First check if we have window.ethereum available
         if (typeof window !== 'undefined' && window.ethereum) {
-          // Create ethers provider from MetaMask
-          const ethereumProvider = new ethers.providers.Web3Provider(window.ethereum);
-          
-          // Request account access if not already granted
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          
-          // Get the signer
-          const ethereumSigner = ethereumProvider.getSigner();
-          
-          // Check if contract address is configured
-          if (!contractAddress) {
-            console.warn('Contract address not configured in environment variables');
-            // Use a dummy address for testing
-            const dummyAddress = '0x0000000000000000000000000000000000000000';
-            
-            // Create mock contract
-            setContract({
-              mintCertificate: async (address, options) => {
-                console.log(`Mock mint certificate for ${address} with value ${options.value}`);
-                return {
-                  wait: async () => ({
-                    events: [{ event: 'CertificateMinted', args: { tokenId: ethers.BigNumber.from(1) } }]
-                  })
-                };
-              },
-              mintFee: async () => ethers.utils.parseEther('0.01')
-            });
-            
-            setMintFee(ethers.utils.parseEther('0.01'));
-            setIsOwner(false);
-            setError(null);
-            setLoading(false);
-            return;
-          }
-          
-          // Try to import contract ABI, or use fallback
-          let contractAbi = FALLBACK_ABI;
+          setWalletAvailable(true);
+
           try {
-            // Try to dynamically import the contract ABI
-            const contractJson = await import('../contracts/DeFiWatchdogCertificate.json');
-            if (contractJson && contractJson.default) {
-              contractAbi = contractJson.default;
-            } else if (contractJson) {
-              contractAbi = contractJson;
-            }
-          } catch (importError) {
-            console.warn('Could not import contract ABI, using fallback ABI', importError);
-          }
-          
-          // Create contract instance with the real address
-          const contractInstance = new ethers.Contract(
-            contractAddress,
-            contractAbi,
-            ethereumSigner
-          );
-          
-          // Get mint fee from contract
-          let fee;
-          try {
-            fee = await contractInstance.mintFee();
-          } catch (feeError) {
-            console.warn('Error getting mint fee, using default', feeError);
-            fee = ethers.utils.parseEther('0.01');
-          }
-          
-          // Get connected account
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          const currentAccount = accounts[0];
-          
-          // Check if connected wallet is owner
-          let ownerStatus = false;
-          if (currentAccount) {
+            // Create ethers provider from MetaMask
+            const ethereumProvider = new ethers.providers.Web3Provider(window.ethereum);
+            
+            // Request account access - wrapped in try/catch to handle user rejection
             try {
-              const owner = await contractInstance.owner();
-              ownerStatus = owner.toLowerCase() === currentAccount.toLowerCase();
-            } catch (err) {
-              console.warn('Error checking contract owner:', err);
+              await window.ethereum.request({ method: 'eth_requestAccounts' });
+            } catch (requestError) {
+              console.log('User declined to connect wallet:', requestError);
+              // Continue in view-only mode
+              setupViewOnlyMode();
+              return;
             }
+            
+            // Get the signer
+            const ethereumSigner = ethereumProvider.getSigner();
+            
+            // Check if contract address is configured
+            if (!contractAddress) {
+              console.warn('Contract address not configured in environment variables');
+              setupMockContract();
+              return;
+            }
+            
+            // Try to import contract ABI, or use fallback
+            let contractAbi = FALLBACK_ABI;
+            try {
+              // Try to dynamically import the contract ABI
+              const contractJson = await import('../contracts/DeFiWatchdogCertificate.json');
+              if (contractJson && contractJson.default) {
+                contractAbi = contractJson.default;
+              } else if (contractJson) {
+                contractAbi = contractJson;
+              }
+            } catch (importError) {
+              console.warn('Could not import contract ABI, using fallback ABI', importError);
+            }
+            
+            // Create contract instance with the real address
+            const contractInstance = new ethers.Contract(
+              contractAddress,
+              contractAbi,
+              ethereumSigner
+            );
+            
+            // Get mint fee from contract
+            let fee;
+            try {
+              fee = await contractInstance.mintFee();
+            } catch (feeError) {
+              console.warn('Error getting mint fee, using default', feeError);
+              fee = ethers.utils.parseEther('0.01');
+            }
+            
+            // Get connected account
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            const currentAccount = accounts[0];
+            
+            // Check if connected wallet is owner
+            let ownerStatus = false;
+            if (currentAccount) {
+              try {
+                const owner = await contractInstance.owner();
+                ownerStatus = owner.toLowerCase() === currentAccount.toLowerCase();
+              } catch (err) {
+                console.warn('Error checking contract owner:', err);
+              }
+            }
+            
+            setContract(contractInstance);
+            setMintFee(fee);
+            setIsOwner(ownerStatus);
+            setError(null);
+          } catch (initError) {
+            console.error('Error during contract initialization:', initError);
+            setError(initError.message);
+            setupMockContract();
           }
-          
-          setContract(contractInstance);
-          setMintFee(fee);
-          setIsOwner(ownerStatus);
-          setError(null);
         } else {
-          // Create a placeholder if MetaMask is not available
-          console.warn('MetaMask not detected, using mock implementation');
-          setContract({
-            mintCertificate: async () => {
-              throw new Error('MetaMask not installed');
-            },
-            mintFee: async () => ethers.utils.parseEther('0.01')
-          });
-          setMintFee(ethers.utils.parseEther('0.01'));
+          // No wallet is available
+          console.warn('No wallet detected, using view-only mode');
+          setWalletAvailable(false);
+          setupViewOnlyMode();
         }
       } catch (err) {
         console.error('Error initializing contract:', err);
         setError(err.message);
-        
-        // Set up a mock contract as fallback
-        setContract({
-          mintCertificate: async (address, options) => {
-            console.log(`Mock mint certificate for ${address} with value ${options.value}`);
-            return {
-              wait: async () => ({
-                events: [{ event: 'CertificateMinted', args: { tokenId: ethers.BigNumber.from(1) } }]
-              })
-            };
-          },
-          mintFee: async () => ethers.utils.parseEther('0.01')
-        });
-        setMintFee(ethers.utils.parseEther('0.01'));
+        setupMockContract();
       } finally {
         setLoading(false);
       }
+    };
+
+    // Helper function to set up a mock contract
+    const setupMockContract = () => {
+      setContract({
+        mintCertificate: async (address, options) => {
+          console.log(`Mock mint certificate for ${address} with value ${options?.value}`);
+          return {
+            wait: async () => ({
+              events: [{ event: 'CertificateMinted', args: { tokenId: ethers.BigNumber.from(1) } }]
+            })
+          };
+        },
+        mintFee: async () => ethers.utils.parseEther('0.01')
+      });
+      setMintFee(ethers.utils.parseEther('0.01'));
+      setIsOwner(false);
+    };
+
+    // Helper function for view-only mode
+    const setupViewOnlyMode = () => {
+      setContract({
+        mintCertificate: async () => {
+          throw new Error('Wallet not connected');
+        },
+        mintFee: async () => ethers.utils.parseEther('0.01')
+      });
+      setMintFee(ethers.utils.parseEther('0.01'));
+      setIsOwner(false);
     };
 
     initContract();
   }, [account, contractAddress]);
 
   // Function to mint a certificate
-// In useContract.js, update the mintCertificate function:
-
-const mintCertificate = async (contractAddress) => {
-  if (!contract) {
-    throw new Error('Contract not initialized');
-  }
-  
-  // Check if demo mode is enabled
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-  if (demoMode) {
-    console.log('Demo mode - returning mock token ID without MetaMask interaction');
-    // Add a small delay to simulate transaction time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return "1";
-  }
-  
-  // Ensure we're connected to MetaMask
-  if (typeof window !== 'undefined' && window.ethereum) {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-  } else {
-    throw new Error('MetaMask not installed');
-  }
-  
-  try {
-    console.log('Calling contract.mintCertificate with address:', contractAddress);
-    console.log('Using mint fee:', mintFee.toString());
-    
-    // Call mintCertificate function on the contract
-    const tx = await contract.mintCertificate(contractAddress, {
-      value: mintFee,
-    });
-    
-    console.log('Transaction sent:', tx.hash);
-    
-    // Wait for transaction to be mined
-    const receipt = await tx.wait();
-    console.log('Transaction confirmed:', receipt);
-    
-    // Find the CertificateMinted event to get the tokenId
-    const event = receipt.events.find(
-      event => event.event === 'CertificateMinted'
-    );
-    
-    if (!event) {
-      console.warn('Certificate minting event not found in transaction');
-      return "1"; // Fallback ID
+  const mintCertificate = async (contractAddress) => {
+    if (!contract) {
+      throw new Error('Contract not initialized');
     }
     
-    return event.args.tokenId.toString();
-  } catch (error) {
-    console.error('Error during minting:', error);
-    throw error;
-  }
-};
+    // Check if demo mode is enabled
+    const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+    if (demoMode) {
+      console.log('Demo mode - returning mock token ID without wallet interaction');
+      // Add a small delay to simulate transaction time
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return "1";
+    }
+    
+    // Ensure we have a wallet available
+    if (!walletAvailable) {
+      throw new Error('No wallet detected. Please install MetaMask or another Web3 wallet.');
+    }
+    
+    // Ensure we're connected to wallet
+    if (typeof window !== 'undefined' && window.ethereum) {
+      try {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (requestError) {
+        throw new Error('Wallet connection was rejected. Please connect your wallet to mint.');
+      }
+    } else {
+      throw new Error('Wallet not installed');
+    }
+    
+    try {
+      console.log('Calling contract.mintCertificate with address:', contractAddress);
+      console.log('Using mint fee:', mintFee.toString());
+      
+      // Call mintCertificate function on the contract
+      const tx = await contract.mintCertificate(contractAddress, {
+        value: mintFee,
+      });
+      
+      console.log('Transaction sent:', tx.hash);
+      
+      // Wait for transaction to be mined
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+      
+      // Find the CertificateMinted event to get the tokenId
+      const event = receipt.events.find(
+        event => event.event === 'CertificateMinted'
+      );
+      
+      if (!event) {
+        console.warn('Certificate minting event not found in transaction');
+        return "1"; // Fallback ID
+      }
+      
+      return event.args.tokenId.toString();
+    } catch (error) {
+      console.error('Error during minting:', error);
+      throw error;
+    }
+  };
 
   return {
     contract,
@@ -225,6 +240,7 @@ const mintCertificate = async (contractAddress) => {
     isOwner,
     loading,
     error,
+    walletAvailable,
     mintCertificate
   };
 }

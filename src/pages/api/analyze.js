@@ -1,13 +1,13 @@
 // pages/api/analyze.js
 import { auditSmartContract } from '../../lib/analyzer';
 import { saveAuditReport, findMostRecentAuditReport } from '../../lib/localStorage';
-import crypto from 'crypto';
 
 // Active requests tracking
 const activeRequests = new Map();
 export const config = {
-  maxDuration: 60 // 5 minutes maximum duration for this endpoint
+  maxDuration: 60 // 60 seconds maximum duration for this endpoint
 };
+
 export default async function handler(req, res) {
   // Only allow POST method
   if (req.method !== 'POST') {
@@ -50,6 +50,39 @@ export default async function handler(req, res) {
         riskLevel: "Unknown",
         isSafe: false
       });
+    }
+    
+    // NEW: Redirect Sonic network requests to ZerePy endpoint
+    if (network === 'sonic') {
+      try {
+        // Forward to the ZerePy endpoint
+        console.log('Redirecting Sonic network request to ZerePy endpoint');
+        
+        const zerebyResponse = await fetch(`${process.env.NEXTAUTH_URL || ''}/api/zerebro/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address,
+            network,
+            forceRefresh,
+            useMultiAI,
+            fastMode
+          }),
+        });
+        
+        if (!zerebyResponse.ok) {
+          throw new Error(`ZerePy analysis failed with status ${zerebyResponse.status}`);
+        }
+        
+        const zerebyResult = await zerebyResponse.json();
+        return res.status(200).json(zerebyResult);
+      } catch (zerebyError) {
+        console.error('Error in ZerePy redirection:', zerebyError);
+        // Continue with regular analysis if ZerePy fails
+        console.log('Falling back to standard analysis for Sonic network');
+      }
     }
     
     // Create a unique key for this request
@@ -132,33 +165,33 @@ export default async function handler(req, res) {
     
     return res.status(200).json(result);
   // In your analyze.js API handler's catch block
-} catch (error) {
-  console.error('Error in audit endpoint:', error);
-  const errorMessage = error.message || 'Unknown error occurred';
-  const isTimeout = errorMessage.includes('timed out');
-  
-  // Return a structured error response
-  return res.status(isTimeout ? 504 : 500).json({
-    success: false,
-    error: errorMessage,
-    address: req.body.address || '',
-    network: req.body.network || 'mainnet',
-    contractName: "Error",
-    contractType: "Unknown",
-    analysis: {
+  } catch (error) {
+    console.error('Error in audit endpoint:', error);
+    const errorMessage = error.message || 'Unknown error occurred';
+    const isTimeout = errorMessage.includes('timed out');
+    
+    // Return a structured error response
+    return res.status(isTimeout ? 504 : 500).json({
+      success: false,
+      error: errorMessage,
+      address: req.body.address || '',
+      network: req.body.network || 'mainnet',
+      contractName: "Error",
       contractType: "Unknown",
-      overview: isTimeout 
-        ? "The analysis timed out. This contract may be too complex or large to analyze quickly."
-        : "An error occurred during analysis",
-      keyFeatures: [],
-      risks: [],
+      analysis: {
+        contractType: "Unknown",
+        overview: isTimeout 
+          ? "The analysis timed out. This contract may be too complex or large to analyze quickly."
+          : "An error occurred during analysis",
+        keyFeatures: [],
+        risks: [],
+        securityScore: 0,
+        riskLevel: "Unknown",
+        explanation: "Error: " + errorMessage
+      },
       securityScore: 0,
       riskLevel: "Unknown",
-      explanation: "Error: " + errorMessage
-    },
-    securityScore: 0,
-    riskLevel: "Unknown",
-    isSafe: false
-  });
-}
+      isSafe: false
+    });
+  }
 }

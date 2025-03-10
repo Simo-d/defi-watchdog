@@ -27,7 +27,8 @@
     "openai": "^4.86.1",
     "react": "^19.0.0",
     "react-confetti": "^6.2.3",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.1"
   },
   "devDependencies": {
     "@types/node": "^20.17.19",

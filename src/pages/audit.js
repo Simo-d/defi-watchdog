@@ -1048,6 +1048,310 @@ function AuditHistory({ contractAddress, network }) {
   );
 }
 
+// ZerePy Agent Status component
+function ZerePyAgentStatus({ isActive, lastUpdated }) {
+  return (
+    <div style={{ 
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0.5rem',
+      backgroundColor: isActive ? '#ecfdf5' : '#fef2f2',
+      borderRadius: '0.375rem',
+      marginBottom: '1rem',
+      border: `1px solid ${isActive ? '#d1fae5' : '#fee2e2'}`,
+    }}>
+      <div style={{ 
+        width: '10px',
+        height: '10px',
+        borderRadius: '50%',
+        backgroundColor: isActive ? '#10b981' : '#ef4444',
+        marginRight: '0.5rem'
+      }} />
+      <span style={{ fontSize: '0.875rem', color: isActive ? '#065f46' : '#991b1b' }}>
+        {isActive ? 'ZerePy Agent Active' : 'ZerePy Agent Inactive'} 
+        {lastUpdated && ` - Last updated: ${new Date(lastUpdated).toLocaleString()}`}
+      </span>
+    </div>
+  );
+}
+
+// SonicNetworkBadge component to emphasize Sonic blockchain integration
+function SonicNetworkBadge({ network }) {
+  const isSonic = network === 'sonic';
+  
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '0.25rem 0.75rem',
+      borderRadius: '9999px',
+      backgroundColor: isSonic ? '#8b5cf6' : '#e5e7eb',
+      color: isSonic ? 'white' : '#4b5563',
+      fontWeight: 'bold',
+      fontSize: '0.75rem',
+      marginLeft: '0.5rem'
+    }}>
+      {isSonic ? (
+        <>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.25rem' }}>
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Sonic Blockchain
+        </>
+      ) : 'Ethereum'}
+    </div>
+  );
+}
+
+// Sonic-specific Gas Optimization component
+function SonicGasOptimizations({ contractAddress, show }) {
+  const [optimizations, setOptimizations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    if (show && contractAddress) {
+      fetchOptimizations();
+    }
+  }, [show, contractAddress]);
+  
+  async function fetchOptimizations() {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/sonic/gas-optimizations?address=${contractAddress}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch Sonic gas optimizations');
+      }
+      
+      const data = await response.json();
+      setOptimizations(data.optimizations || []);
+    } catch (error) {
+      console.error('Error fetching Sonic gas optimizations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+  if (!show) return null;
+  
+  return (
+    <div style={{ marginTop: '1.5rem' }}>
+      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.5rem' }}>
+          <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Sonic-Specific Optimizations
+      </h3>
+      
+      {loading ? (
+        <div style={{ padding: '1rem', textAlign: 'center', backgroundColor: '#f3f4f6', borderRadius: '0.5rem' }}>
+          <p>Loading Sonic optimizations...</p>
+        </div>
+      ) : optimizations.length === 0 ? (
+        <div style={{ padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '0.5rem' }}>
+          <p style={{ margin: 0 }}>No Sonic-specific optimizations available for this contract.</p>
+        </div>
+      ) : (
+        <div>
+          {optimizations.map((opt, index) => (
+            <div 
+              key={index} 
+              style={{ 
+                padding: '1rem', 
+                backgroundColor: '#f9fafb', 
+                borderRadius: '0.5rem',
+                marginBottom: '1rem',
+                border: '1px solid #e5e7eb' 
+              }}
+            >
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '600' }}>{opt.title}</h4>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem' }}>{opt.description}</p>
+              
+              {opt.codeSnippet && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Original Code:</div>
+                  <pre style={{ 
+                    backgroundColor: '#f1f5f9', 
+                    padding: '0.5rem', 
+                    borderRadius: '0.25rem',
+                    fontSize: '0.75rem',
+                    overflow: 'auto'
+                  }}>
+                    {opt.codeSnippet}
+                  </pre>
+                </div>
+              )}
+              
+              {opt.sonicOptimizedCode && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Sonic-Optimized Code:</div>
+                  <pre style={{ 
+                    backgroundColor: '#ecfdf5', 
+                    padding: '0.5rem', 
+                    borderRadius: '0.25rem',
+                    fontSize: '0.75rem',
+                    overflow: 'auto'
+                  }}>
+                    {opt.sonicOptimizedCode}
+                  </pre>
+                </div>
+              )}
+              
+              {opt.gasSavings && (
+                <div style={{ 
+                  marginTop: '0.5rem',
+                  fontSize: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#047857'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.25rem' }}>
+                    <path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" />
+                  </svg>
+                  Estimated Gas Savings: {opt.gasSavings} (~{opt.costSavings || '0.01'} ETH at current prices)
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Autonomous Monitoring Control component
+function AutonomousMonitoring({ contractAddress, network, isEnabled, onToggle }) {
+  const [isActive, setIsActive] = useState(isEnabled);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleToggle = async () => {
+    setIsLoading(true);
+    try {
+      // Call API to toggle monitoring state
+      const response = await fetch('/api/zerebro/monitor/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: contractAddress,
+          network,
+          enabled: !isActive
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to toggle monitoring');
+      }
+      
+      setIsActive(!isActive);
+      if (onToggle) onToggle(!isActive);
+      
+    } catch (error) {
+      console.error('Error toggling monitoring:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div style={{
+      padding: '1rem',
+      backgroundColor: '#f9fafb',
+      borderRadius: '0.5rem',
+      marginTop: '1.5rem',
+      border: '1px solid #e5e7eb'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.5rem' }}>
+              <path d="M19 11V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+              <circle cx="16" cy="16" r="6" />
+              <path d="M16 14v4" />
+              <path d="M16 22v.01" />
+            </svg>
+            ZerePy Autonomous Monitoring
+          </div>
+        </h3>
+        <div>
+          <button
+            onClick={handleToggle}
+            disabled={isLoading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '0.5rem 1rem',
+              backgroundColor: isActive ? '#ef4444' : '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1
+            }}
+          >
+            {isLoading ? (
+              <>
+                <svg 
+                  style={{ 
+                    animation: 'spin 1s linear infinite',
+                    marginRight: '0.25rem',
+                    height: '0.875rem',
+                    width: '0.875rem'
+                  }} 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                >
+                  <circle 
+                    style={{ opacity: 0.25 }} 
+                    cx="12" 
+                    cy="12" 
+                    r="10" 
+                    stroke="currentColor" 
+                    strokeWidth="4"
+                  ></circle>
+                  <path 
+                    style={{ opacity: 0.75 }} 
+                    fill="currentColor" 
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : isActive ? 'Disable Monitoring' : 'Enable Monitoring'}
+          </button>
+        </div>
+      </div>
+      
+      <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.5rem 0' }}>
+        {isActive ? 
+          'This contract is being continuously monitored by our ZerePy AI agent. You will receive alerts for any suspicious activities or vulnerabilities detected.' : 
+          'Enable autonomous monitoring to have our ZerePy AI agent continuously check this contract for security issues and malicious activities.'}
+      </p>
+      
+      {isActive && (
+        <div style={{ 
+          marginTop: '0.75rem', 
+          padding: '0.5rem',
+          backgroundColor: '#f0fdfa',
+          borderRadius: '0.375rem',
+          border: '1px solid #d1fae5',
+          fontSize: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', color: '#047857' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.25rem' }}>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Monitoring active since {new Date().toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Audit() {
   const router = useRouter();
   const { account, connect } = useWallet();
@@ -1057,6 +1361,32 @@ export default function Audit() {
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  // 1. Add ZerePy agent status state
+  const [zerebyAgentStatus, setZerebyAgentStatus] = useState({ active: false, lastUpdated: null });
+  // 2. Add ZerePy status check in useEffect
+  useEffect(() => {
+    console.log("Audit component mounted, checking wallet connection");
+    console.log("Current wallet account:", account);
+    
+    // Check ZerePy agent status
+    async function checkAgentStatus() {
+      try {
+        const response = await fetch('/api/zerebro/status');
+        if (response.ok) {
+          const data = await response.json();
+          setZerebyAgentStatus({
+            active: data.active,
+            lastUpdated: data.lastUpdated
+          });
+        }
+      } catch (error) {
+        console.error('Error checking ZerePy agent status:', error);
+      }
+    }
+    
+    checkAgentStatus();
+  }, [account]);
+
   
   // Create refs at the component's top level
   const prevAddressRef = useRef(null);
@@ -1098,6 +1428,10 @@ export default function Audit() {
     
     const contractAddress = addressOverride || address.trim();
     const contractNetwork = networkOverride || network;
+
+    const apiEndpoint = contractNetwork === 'sonic' 
+      ? '/api/zerebro/analyze' 
+      : '/api/analyze';
     
     if (!contractAddress) return;
 
@@ -1106,7 +1440,7 @@ export default function Audit() {
     
     try {
       // Call the actual API endpoint to analyze the contract
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1214,6 +1548,10 @@ export default function Audit() {
         
         {!result ? (
           <div style={{ maxWidth: '800px', background: 'white', padding: '2rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <ZerePyAgentStatus 
+              isActive={zerebyAgentStatus.active} 
+              lastUpdated={zerebyAgentStatus.lastUpdated} 
+            />
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '1.5rem' }}>
                 <label htmlFor="contract-address" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -1318,7 +1656,7 @@ export default function Audit() {
               <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #eee', backgroundColor: '#fef2f2' }}>
                   <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results <SonicNetworkBadge network={network} /> </h2>
                     <p style={{ color: '#6b7280' }}>{result.contractName} ({result.address.substring(0, 6)}...{result.address.slice(-4)})</p>
                   </div>
                   <div style={{ 
@@ -1371,7 +1709,28 @@ export default function Audit() {
                     >
                       Overview
                     </button>
-                    
+                    {network === 'sonic' && (
+                    <button
+                      onClick={() => setActiveTab('sonic')}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: activeTab === 'sonic' ? '2px solid #8b5cf6' : 'none',
+                        fontWeight: activeTab === 'sonic' ? 'bold' : 'normal',
+                        color: activeTab === 'sonic' ? '#8b5cf6' : '#6b7280',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.25rem' }}>
+                          <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Sonic Optimizations
+                      </button>
+                    )}
+
                     <button
                       onClick={() => setActiveTab('findings')}
                       style={{
@@ -1469,6 +1828,32 @@ export default function Audit() {
                         </div>
                       )}
                     </>
+                  )}
+
+                  {activeTab === 'sonic' && (
+                    <div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.5rem' }}>
+                          <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Sonic-Specific Optimizations
+                      </h3>
+                      
+                      <SonicGasOptimizations 
+                        contractAddress={result.address} 
+                        show={true} 
+                      />
+                      
+                      <div style={{ marginTop: '2rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>Autonomous Monitoring</h4>
+                        <AutonomousMonitoring 
+                          contractAddress={result.address} 
+                          network={network} 
+                          isEnabled={false} 
+                          onToggle={() => {}} 
+                        />
+                      </div>
+                    </div>
                   )}
                   
                   {activeTab === 'findings' && (

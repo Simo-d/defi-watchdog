@@ -7,12 +7,14 @@ export default function Header() {
   const { account, connect, disconnect } = useWallet();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
   const router = useRouter();
   
   // Handle scroll for transparent to solid header transition
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY);
     };
     
     window.addEventListener('scroll', handleScroll);
@@ -29,16 +31,51 @@ export default function Header() {
   // Menu items
   const menuItems = [
     { path: '/', label: 'Home' },
+    { path: '/dashboard', label: 'Dashboard' },
     { path: '/audit', label: 'Audit' },
     { path: '/how-it-works', label: 'How It Works' }
   ];
 
-  // Handle wallet connection
-  const handleWalletClick = () => {
+  // Handle wallet connection with simpler, direct approach
+  const handleWalletConnect = async () => {
+    // If already connected, disconnect
     if (account) {
       disconnect();
-    } else {
-      connect();
+      return;
+    }
+    
+    // Otherwise try to connect
+    setIsConnecting(true);
+    setConnectionError(null);
+    
+    try {
+      // Direct ethereum connection for maximum compatibility
+      if (typeof window !== 'undefined' && window.ethereum) {
+        try {
+          // Try the most reliable method first
+          const accounts = await window.ethereum.request({ 
+            method: 'eth_requestAccounts' 
+          });
+          
+          // If we get here, connection was successful
+          console.log("Connected to wallet:", accounts[0]);
+          
+          // Let the context know we're connected (if not auto-detected)
+          if (typeof connect === 'function') {
+            await connect();
+          }
+        } catch (requestError) {
+          console.error("Error requesting accounts:", requestError);
+          throw new Error("Wallet connection failed. Please check your wallet extension.");
+        }
+      } else {
+        throw new Error("No wallet detected. Please install MetaMask or another Web3 wallet.");
+      }
+    } catch (error) {
+      console.error("Connection error:", error);
+      setConnectionError(error.message);
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -103,8 +140,10 @@ export default function Header() {
 
         {/* Wallet Button and Mobile Menu Toggle */}
         <div className="flex items-center">
+          {/* Simple Wallet Connect Button */}
           <button
-            onClick={handleWalletClick}
+            onClick={handleWalletConnect}
+            disabled={isConnecting}
             className={`
               mr-2 md:mr-0 rounded-lg py-2 px-4 text-sm font-medium transition-all duration-300 flex items-center
               ${account 
@@ -112,6 +151,7 @@ export default function Header() {
                 : !scrolled
                   ? 'bg-blue-500 text-white shadow-md hover:shadow-lg hover:bg-blue-600'
                   : 'bg-blue-600 text-white shadow-md hover:shadow-lg hover:bg-blue-700'}
+              ${isConnecting ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
             `}
           >
             {account ? (
@@ -119,15 +159,30 @@ export default function Header() {
                 <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
                 {formatAccount(account)}
               </>
+            ) : isConnecting ? (
+              <>
+                <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Connecting...
+              </>
             ) : (
               <>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                Connect
+                Connect Wallet
               </>
             )}
           </button>
+
+          {/* Connection Error Indicator (if any) */}
+          {connectionError && !account && (
+            <div className="hidden md:block absolute top-20 right-4 bg-red-100 text-red-700 p-2 rounded-md text-xs border border-red-200 max-w-xs">
+              {connectionError}
+            </div>
+          )}
 
           {/* Mobile Menu Toggle */}
           <button
@@ -148,9 +203,9 @@ export default function Header() {
       </div>
 
       {/* Mobile Menu */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="container mx-auto px-4 py-3 bg-white shadow-lg rounded-b-xl mt-2">
-          <nav className="flex flex-col space-y-3 pb-3">
+          <nav className="flex flex-col space-y-3">
             {menuItems.map((item) => (
               <Link 
                 key={item.path} 
@@ -163,6 +218,13 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
+            
+            {/* Error Message (if any) in Mobile Menu */}
+            {connectionError && !account && (
+              <div className="px-4 py-2 text-xs text-red-600 bg-red-50 rounded-md mt-2">
+                {connectionError}
+              </div>
+            )}
           </nav>
         </div>
       </div>
