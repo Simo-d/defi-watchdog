@@ -1,0 +1,94 @@
+{
+  "success": true,
+  "address": "0x102f1f556cd9c3d5f820e6920a8931657c5da21b",
+  "network": "sonic",
+  "contractName": "SacraRelay",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.23+commit.f704f362",
+  "analysis": {
+    "overview": "The SacraRelay contract poses medium security risks due to potential unauthorized operator access, lack of user delegation revocation mechanism, and insecure contract call handling. Improvements are needed to enhance security measures and mitigate these risks.\n\nThis contract appears to be optimized for the Sonic blockchain with 2 Sonic-specific optimizations detected.",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "MEDIUM",
+        "description": "Operators can call game contracts on behalf of users without explicit user approval, which may lead to unauthorized actions.",
+        "codeReference": "See full report",
+        "impact": "Unauthorized actions can be performed on behalf of users, compromising their assets and interactions with game contracts.",
+        "recommendation": "Implement a mechanism to require explicit user approval for operator actions to prevent unauthorized access."
+      },
+      {
+        "severity": "MEDIUM",
+        "description": "There is no explicit mechanism for users to revoke delegation from a specific delegator, potentially leaving users vulnerable to unwanted actions.",
+        "codeReference": "See full report",
+        "impact": "Users may not have control over who can act on their behalf, leading to potential misuse of delegated permissions.",
+        "recommendation": "Implement a feature that allows users to revoke delegation from specific delegators to maintain control over their actions."
+      },
+      {
+        "severity": "LOW",
+        "description": "The contract uses a basic method for handling contract calls, which may not provide robust protection against reentrancy or other vulnerabilities.",
+        "codeReference": "See full report",
+        "impact": "Vulnerabilities in contract call handling can lead to reentrancy attacks or other exploits, compromising contract integrity.",
+        "recommendation": "Enhance contract call handling to include safeguards against reentrancy and other potential vulnerabilities."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "Implements nonReentrant modifiers on critical functions.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 79,
+    "riskLevel": "Low Risk",
+    "explanation": "The SacraRelay contract poses medium security risks due to potential unauthorized operator access, lack of user delegation revocation mechanism, and insecure contract call handling. Improvements are needed to enhance security measures and mitigate these risks.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 1,
+      "info": 0
+    },
+    "sonicSpecifics": {
+      "optimizedForSonic": true,
+      "usesSonicGateway": false,
+      "batchProcessingOptimized": true,
+      "highThroughputDetected": false,
+      "recentTransactions": 0,
+      "averageGasUsed": 0,
+      "bytecodeSize": 12016,
+      "balance": "1.0",
+      "txCount": 1,
+      "compatibilityLevel": "High",
+      "sonicIntegrationScore": 69
+    },
+    "analyzedBy": "ZerePy"
+  },
+  "securityScore": 79,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "16.26s",
+  "timestamp": "2025-03-25T17:41:27.951Z",
+  "zerebro": true,
+  "_id": "3b505fb3-862d-4114-b95e-67ae9e0a9db9",
+  "createdAt": "2025-03-25T17:41:39.679Z"
+}

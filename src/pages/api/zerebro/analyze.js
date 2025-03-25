@@ -6,7 +6,7 @@ import { auditSmartContract } from '../../../lib/analyzer';
 // Active requests tracking
 const activeRequests = new Map();
 export const config = {
-  maxDuration: 60 // 90 seconds maximum duration for this endpoint (Sonic analysis may take longer)
+  maxDuration: 60 // 60 seconds maximum duration for this endpoint
 };
 
 export default async function handler(req, res) {
@@ -20,7 +20,8 @@ export default async function handler(req, res) {
       method: req.method,
       url: req.url,
       hasBody: !!req.body,
-      network: req.body?.network || 'unknown'
+      network: req.body?.network || 'unknown',
+      address: req.body?.address
     });
     
     const { address, network = 'sonic', forceRefresh = false, useMultiAI = true, fastMode = false } = req.body;
@@ -90,18 +91,33 @@ export default async function handler(req, res) {
           }
         }
         
+        // Try multiple RPC endpoints if one fails
+        const rpcUrls = [
+          process.env.SONIC_RPC_URL,
+          'https://mainnet.sonic.io/rpc',
+          'https://rpc.sonic.io',
+          'https://mainnet.soniclabs.com/rpc',
+          'https://rpc.soniclabs.com'
+        ].filter(Boolean);
+
         // Set up provider for Sonic network
         let provider;
-        try {
-          provider = new ethers.providers.JsonRpcProvider(
-            process.env.SONIC_RPC_URL || 'https://mainnet.soniclabs.com/rpc'
-          );
-          
-          // Quick test to see if provider is working
-          await provider.getBlockNumber();
-          console.log('Successfully connected to Sonic RPC');
-        } catch (error) {
-          console.error('Error connecting to Sonic RPC:', error);
+        let connected = false;
+
+        for (const url of rpcUrls) {
+          try {
+            console.log(`Attempting to connect to Sonic RPC at: ${url}`);
+            provider = new ethers.providers.JsonRpcProvider(url);
+            const blockNumber = await provider.getBlockNumber();
+            console.log(`✓ Successfully connected to Sonic RPC at ${url} (block ${blockNumber})`);
+            connected = true;
+            break;
+          } catch (error) {
+            console.warn(`✗ Failed to connect to Sonic RPC at ${url}: ${error.message}`);
+          }
+        }
+
+        if (!connected || !provider) {
           throw new Error('Failed to connect to Sonic blockchain. Please try again later.');
         }
         
@@ -216,6 +232,8 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Rest of your functions remain the same
 
 /**
  * Analyzes Sonic-specific patterns in contract bytecode

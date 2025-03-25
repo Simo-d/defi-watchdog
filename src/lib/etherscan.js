@@ -13,11 +13,47 @@ function getEtherscanBaseUrl(network) {
       return 'https://api.etherscan.io';
   }
 }
+
+/**
+ * Get appropriate API key based on network
+ */
 function getApiKey(network) {
   if (network.toLowerCase() === 'sonic') {
     return process.env.SONICSCAN_API_KEY; // Use SonicScan API key
   }
   return process.env.ETHERSCAN_API_KEY; // Use Etherscan API key
+}
+
+/**
+ * Adapts SonicScan API responses to match Etherscan format
+ * @param {object} data - The API response data 
+ * @param {string} address - The contract address
+ * @returns {object} Normalized contract data
+ */
+function adaptSonicScanResponse(data, address) {
+  if (!data || !data.result || !data.result[0]) {
+    console.warn('No valid data returned from SonicScan API');
+    return null;
+  }
+  
+  const contractData = data.result[0];
+  console.log('SonicScan response keys:', Object.keys(contractData));
+  
+  return {
+    address,
+    sourceCode: contractData.SourceCode || '',
+    contractName: contractData.ContractName || `Contract-${address.slice(0, 6)}`,
+    compiler: contractData.CompilerVersion || 'Unknown',
+    optimization: contractData.OptimizationUsed === '1',
+    runs: contractData.Runs || '0',
+    constructorArguments: contractData.ConstructorArguments || '',
+    implementationAddress: contractData.Implementation || null,
+    proxyType: contractData.Proxy || '0',
+    isProxy: contractData.Proxy === '1',
+    verifiedAt: contractData.VerifiedTimestamp 
+      ? new Date(parseInt(contractData.VerifiedTimestamp) * 1000).toISOString() 
+      : null
+  };
 }
 
 /**
@@ -30,11 +66,11 @@ export async function getContractSource(address, network = 'mainnet') {
   try {
     const apiKey = getApiKey(network);
     if (!apiKey) {
-      console.warn('Etherscan API key not found. Using fallback data.');
+      console.warn(`${network} API key not found. Using fallback data.`);
       return {
         address,
         sourceCode: '',
-        contractName: `Contract ${address.slice(0, 6)}`,
+        contractName: `Contract-${address.slice(0, 6)}`,
         compiler: 'Unknown',
         optimization: false,
         runs: '0',
@@ -49,6 +85,8 @@ export async function getContractSource(address, network = 'mainnet') {
     const baseUrl = getEtherscanBaseUrl(network);
     const url = `${baseUrl}/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
     
+    console.log(`Making API request to ${url.replace(apiKey, 'API_KEY_HIDDEN')}`);
+    
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -57,13 +95,16 @@ export async function getContractSource(address, network = 'mainnet') {
     }
     
     const data = await response.json();
+    console.log('API response status:', data.status);
+    console.log('API response has result:', !!data.result && !!data.result[0]);
     
+    // Check for valid API response
     if (data.status !== '1' || !data.result || !data.result[0]) {
       console.warn('API returned no data or error status', data);
       return {
         address,
         sourceCode: '',
-        contractName: `Contract ${address.slice(0, 6)}`,
+        contractName: `Contract-${address.slice(0, 6)}`,
         compiler: 'Unknown',
         optimization: false,
         runs: '0',
@@ -75,14 +116,24 @@ export async function getContractSource(address, network = 'mainnet') {
       };
     }
     
+    // Handle Sonic network specifically
+    if (network.toLowerCase() === 'sonic') {
+      console.log('Processing SonicScan API response');
+      const adaptedData = adaptSonicScanResponse(data, address);
+      if (adaptedData) {
+        return adaptedData;
+      }
+    }
+    
+    // Process standard Etherscan response
     const contractData = data.result[0];
     
-    if (!contractData.SourceCode || contractData.SourceCode === '') {
+    if (!contractData.SourceCode && !contractData.sourceCode) {
       console.warn('Contract not verified or no source code available');
       return {
         address,
         sourceCode: '',
-        contractName: contractData.ContractName || `Contract ${address.slice(0, 6)}`,
+        contractName: contractData.ContractName || `Contract-${address.slice(0, 6)}`,
         compiler: contractData.CompilerVersion || 'Unknown',
         optimization: contractData.OptimizationUsed === '1',
         runs: contractData.Runs || '0',
@@ -97,7 +148,7 @@ export async function getContractSource(address, network = 'mainnet') {
     }
     
     // Process source code based on how it's stored in Etherscan
-    let sourceCode = contractData.SourceCode;
+    let sourceCode = contractData.SourceCode || '';
     
     // Handle Etherscan's special JSON format for multi-file contracts
     if (sourceCode.startsWith('{') && sourceCode.includes('sources')) {
@@ -126,7 +177,7 @@ export async function getContractSource(address, network = 'mainnet') {
     return {
       address,
       sourceCode,
-      contractName: contractData.ContractName || `Contract ${address.slice(0, 6)}`,
+      contractName: contractData.ContractName || `Contract-${address.slice(0, 6)}`,
       compiler: contractData.CompilerVersion || 'Unknown',
       optimization: contractData.OptimizationUsed === '1',
       runs: contractData.Runs || '0',
@@ -144,7 +195,7 @@ export async function getContractSource(address, network = 'mainnet') {
     return {
       address,
       sourceCode: '',
-      contractName: `Contract ${address.slice(0, 6)}`,
+      contractName: `Contract-${address.slice(0, 6)}`,
       compiler: 'Unknown',
       optimization: false,
       runs: '0',
@@ -165,7 +216,7 @@ export async function getContractSource(address, network = 'mainnet') {
  */
 export async function getContractInfo(address, network = 'mainnet') {
   try {
-    const apiKey = process.env.ETHERSCAN_API_KEY;
+    const apiKey = getApiKey(network);
     if (!apiKey) {
       return {
         address,

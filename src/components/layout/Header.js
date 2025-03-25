@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useWallet } from '../../hooks/useWallet';
 
+
+
 export default function Header() {
   const { account, connect, disconnect } = useWallet();
   const [scrolled, setScrolled] = useState(false);
@@ -10,7 +12,8 @@ export default function Header() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
   const router = useRouter();
-  
+  const [chainId, setChainId] = useState(null);
+const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
   // Handle scroll for transparent to solid header transition
   useEffect(() => {
     const handleScroll = () => {
@@ -22,12 +25,75 @@ export default function Header() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
+  useEffect(() => {
+    const checkNetwork = async () => {
+      if (typeof window !== 'undefined' && window.ethereum) {
+        try {
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          const currentChainId = parseInt(chainId, 16);
+          setChainId(currentChainId);
+          setIsCorrectNetwork(currentChainId === 146); // Sonic chain ID
+        } catch (error) {
+          console.error('Error checking network:', error);
+        }
+      }
+    };
+    
+    checkNetwork();
+    
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', () => {
+        checkNetwork();
+      });
+    }
+    
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('chainChanged', checkNetwork);
+      }
+    };
+  }, []);
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [router.pathname]);
-
+// Add this function in Header.js
+const handleNetworkSwitch = async () => {
+  const SONIC_CHAIN_ID = 146; // Sonic Chain ID
+  
+  if (!account || !window.ethereum) return;
+  
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: `0x${SONIC_CHAIN_ID.toString(16)}` }],
+    });
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask
+    if (switchError.code === 4902 || switchError.message.includes('wallet_addEthereumChain')) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
+            chainName: 'Sonic',
+            nativeCurrency: {
+              name: 'SONIC',
+              symbol: 'SONIC',
+              decimals: 18
+            },
+            rpcUrls: ['https://mainnet.sonic.io/rpc'],
+            blockExplorerUrls: ['https://sonicscan.org/']
+          }],
+        });
+      } catch (addError) {
+        setConnectionError('Could not add Sonic network to your wallet. Please add it manually.');
+      }
+    } else {
+      setConnectionError('Failed to switch to Sonic network. Please try again.');
+    }
+  }
+};
   // Menu items
   const menuItems = [
     { path: '/', label: 'Home' },
@@ -176,7 +242,25 @@ export default function Header() {
               </>
             )}
           </button>
-
+          {account && (
+            <div className="flex items-center mr-2">
+              <div className={`px-2 py-1 rounded-l-full text-xs font-medium ${
+                isCorrectNetwork 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+              }`}>
+                {isCorrectNetwork ? 'Sonic' : 'Wrong Network'}
+              </div>
+              {!isCorrectNetwork && (
+                <button
+                  onClick={handleNetworkSwitch}
+                  className="px-2 py-1 rounded-r-full text-xs font-medium bg-blue-500 text-white border border-blue-600 hover:bg-blue-600 transition-colors"
+                >
+                  Switch
+                </button>
+              )}
+            </div>
+          )}
           {/* Connection Error Indicator (if any) */}
           {connectionError && !account && (
             <div className="hidden md:block absolute top-20 right-4 bg-red-100 text-red-700 p-2 rounded-md text-xs border border-red-200 max-w-xs">

@@ -85,6 +85,7 @@ function EnhancedMintButton({ contractAddress }) {
   const { account, connect } = useWallet();
   const { mintFee, mintCertificate, loading: contractLoading } = useContract();
   const [isLoading, setIsLoading] = useState(false);
+  const [networkError, setNetworkError] = useState(null);
 
   async function handleMint() {
     // Check if wallet is connected
@@ -99,6 +100,7 @@ function EnhancedMintButton({ contractAddress }) {
     }
 
     setIsLoading(true);
+    setNetworkError(null);
 
     try {
       console.log('Starting mint process for:', contractAddress);
@@ -111,7 +113,17 @@ function EnhancedMintButton({ contractAddress }) {
       router.push(`/certificate/${tokenId}`);
     } catch (err) {
       console.error('Minting error:', err);
-      alert(`Minting failed: ${err.message}`);
+      
+      // Check if it's a network-related error
+      if (err.message && (
+          err.message.includes('network') || 
+          err.message.includes('chain') || 
+          err.message.includes('Sonic')
+        )) {
+        setNetworkError(err.message);
+      } else {
+        alert(`Minting failed: ${err.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -193,6 +205,20 @@ function EnhancedMintButton({ contractAddress }) {
         <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.5rem' }}>
           Fee: {mintFee ? ethers.utils.formatEther(mintFee) : '0.01'} ETH
         </p>
+      )}
+      
+      {networkError && (
+        <div style={{ 
+          marginTop: '0.5rem',
+          padding: '0.5rem',
+          backgroundColor: '#FEF2F2',
+          borderRadius: '0.375rem',
+          color: '#B91C1C',
+          fontSize: '0.875rem',
+          border: '1px solid #FEE2E2'
+        }}>
+          {networkError}
+        </div>
       )}
     </div>
   );

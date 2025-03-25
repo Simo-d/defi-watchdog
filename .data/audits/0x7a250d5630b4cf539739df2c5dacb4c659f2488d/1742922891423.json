@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "address": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  "network": "mainnet",
+  "contractName": "UniswapV2Router02",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.6.6+commit.6c089d02",
+  "analysis": {
+    "overview": "AI response format was not as expected",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "INFO",
+        "description": "The UniswapV2Router02 contract facilitates key functions such as swapping tokens, adding liquidity, removing liquidity, and routing trades. Users can utilize this contract for decentralized token trading on the Uniswap platform.",
+        "codeReference": "See full report",
+        "impact": "N/A",
+        "recommendation": "Review the contract code manually for a comprehensive understanding."
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 75,
+    "riskLevel": "Low Risk",
+    "explanation": "AI response format was not as expected",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "securityScore": 75,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": false,
+  "analysisTime": "9.28s",
+  "timestamp": "2025-03-25T17:14:51.391Z",
+  "_id": "5e9a1d8a-f8ce-4da7-84f8-58885557665d",
+  "createdAt": "2025-03-25T17:14:51.423Z"
+}

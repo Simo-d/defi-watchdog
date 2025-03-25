@@ -283,6 +283,30 @@ export function WalletProvider({ children }) {
       });
       return true;
     } catch (error) {
+      // Chain doesn't exist, try to add it (specifically for Sonic)
+      if ((error.code === 4902 || error.message.includes('wallet_addEthereumChain')) && chainId === 146) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: `0x${chainId.toString(16)}`,
+              chainName: 'Sonic',
+              nativeCurrency: {
+                name: 'SONIC',
+                symbol: 'SONIC',
+                decimals: 18
+              },
+              rpcUrls: ['https://mainnet.sonic.io/rpc'],
+              blockExplorerUrls: ['https://sonicscan.org/']
+            }],
+          });
+          return true;
+        } catch (addError) {
+          setError(`Failed to add Sonic network: ${addError.message}`);
+          return false;
+        }
+      }
+      
       setError(`Failed to switch network: ${error.message}`);
       return false;
     }

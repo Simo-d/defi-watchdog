@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from './useWallet';
-
+// Add this near the top of your useContract.js file
+const SONIC_CHAIN_ID = 146; // Replace with the actual Sonic chain ID
 // Hardcoded contract ABI for when the import fails
 const FALLBACK_ABI = [
   {
@@ -172,7 +173,11 @@ export function useContract() {
   }, [account, contractAddress]);
 
   // Function to mint a certificate
+
   const mintCertificate = async (contractAddress) => {
+    // Define Sonic chain ID
+    const SONIC_CHAIN_ID = 146;
+    
     if (!contract) {
       throw new Error('Contract not initialized');
     }
@@ -181,7 +186,6 @@ export function useContract() {
     const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
     if (demoMode) {
       console.log('Demo mode - returning mock token ID without wallet interaction');
-      // Add a small delay to simulate transaction time
       await new Promise(resolve => setTimeout(resolve, 1000));
       return "1";
     }
@@ -195,43 +199,117 @@ export function useContract() {
     if (typeof window !== 'undefined' && window.ethereum) {
       try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // Check if we're on the Sonic network
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const currentChainId = parseInt(chainId, 16);
+        
+        // If not on Sonic network, try to switch
+        if (currentChainId !== SONIC_CHAIN_ID) {
+          console.log(`Switching to Sonic network (${SONIC_CHAIN_ID}) from current network (${currentChainId})`);
+          
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: `0x${SONIC_CHAIN_ID.toString(16)}` }],
+            });
+            
+            // Wait for chain to switch (important!)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('Switched to Sonic network');
+            
+          } catch (switchError) {
+            console.log('Error switching chain:', switchError);
+            
+            // This error code indicates that the chain has not been added to MetaMask
+            if (switchError.code === 4902 || 
+                switchError.message.includes('wallet_addEthereumChain') ||
+                switchError.message.includes('Unrecognized chain ID')) {
+              try {
+                await window.ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [{
+                    chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
+                    chainName: 'Sonic',
+                    nativeCurrency: {
+                      name: 'SONIC',
+                      symbol: 'SONIC',
+                      decimals: 18
+                    },
+                    rpcUrls: ['https://mainnet.sonic.io/rpc'],
+                    blockExplorerUrls: ['https://sonicscan.org/']
+                  }],
+                });
+                
+                // Wait for chain to be added
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('Added Sonic network to wallet');
+                
+              } catch (addError) {
+                console.error('Error adding chain:', addError);
+                throw new Error('Could not add Sonic network to your wallet. Please add it manually.');
+              }
+            } else {
+              throw new Error('Failed to switch to Sonic network. Please switch manually.');
+            }
+          }
+          
+          // Re-initialize the provider after network switch
+          const ethereumProvider = new ethers.providers.Web3Provider(window.ethereum);
+          const ethereumSigner = ethereumProvider.getSigner();
+          const updatedContract = new ethers.Contract(
+            contractAddress,
+            contract.interface,
+            ethereumSigner
+          );
+          
+          // Try the transaction with the updated contract
+          return mintWithContract(updatedContract, contractAddress);
+        }
       } catch (requestError) {
-        throw new Error('Wallet connection was rejected. Please connect your wallet to mint.');
+        console.error('Connection or network switching error:', requestError);
+        throw requestError;
       }
     } else {
       throw new Error('Wallet not installed');
     }
     
-    try {
-      console.log('Calling contract.mintCertificate with address:', contractAddress);
-      console.log('Using mint fee:', mintFee.toString());
-      
-      // Call mintCertificate function on the contract
-      const tx = await contract.mintCertificate(contractAddress, {
-        value: mintFee,
-      });
-      
-      console.log('Transaction sent:', tx.hash);
-      
-      // Wait for transaction to be mined
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
-      
-      // Find the CertificateMinted event to get the tokenId
-      const event = receipt.events.find(
-        event => event.event === 'CertificateMinted'
-      );
-      
-      if (!event) {
-        console.warn('Certificate minting event not found in transaction');
-        return "1"; // Fallback ID
+    // Helper function to execute the mint with a given contract
+    async function mintWithContract(contractToUse, address) {
+      try {
+        console.log('Calling contract.mintCertificate with address:', address);
+        console.log('Using mint fee:', mintFee.toString());
+        
+        // Call mintCertificate function on the contract
+        const tx = await contractToUse.mintCertificate(address, {
+          value: mintFee,
+        });
+        
+        console.log('Transaction sent:', tx.hash);
+        
+        // Wait for transaction to be mined
+        const receipt = await tx.wait();
+        console.log('Transaction confirmed:', receipt);
+        
+        // Find the CertificateMinted event to get the tokenId
+        const event = receipt.events.find(
+          event => event.event === 'CertificateMinted'
+        );
+        
+        if (!event) {
+          console.warn('Certificate minting event not found in transaction');
+          return "1"; // Fallback ID
+        }
+        
+        return event.args.tokenId.toString();
+      } catch (error) {
+        console.error('Error during minting:', error);
+        throw error;
       }
-      
-      return event.args.tokenId.toString();
-    } catch (error) {
-      console.error('Error during minting:', error);
-      throw error;
     }
+    
+    // If we're already on the right network, proceed with the original contract
+    return mintWithContract(contract, contractAddress);
   };
 
   return {
