@@ -3,27 +3,86 @@
  * @param {string} network - The blockchain network name
  * @returns {string} The Etherscan API base URL
  */
+/**
+ * Get the appropriate Etherscan API base URL based on the selected network
+ * @param {string} network - The blockchain network name
+ * @returns {string} The Etherscan API base URL
+ */
 function getEtherscanBaseUrl(network) {
   switch (network.toLowerCase()) {
     case 'mainnet':
       return 'https://api.etherscan.io';
     case 'sonic':
-      return 'https://api.sonicscan.org'; // Sonic API base URL
+      return 'https://api.sonicscan.org';
+    case 'linea':
+      return 'https://api.lineascan.build'; // Ajout de l'API Lineascan
     default:
       return 'https://api.etherscan.io';
   }
 }
-
+function adaptLineaScanResponse(data, address) {
+  if (!data || !data.result || !data.result[0]) {
+    console.warn('No valid data returned from LineaScan API');
+    return null;
+  }
+  
+  const contractData = data.result[0];
+  console.log('LineaScan response keys:', Object.keys(contractData));
+  
+  return {
+    address,
+    sourceCode: contractData.SourceCode || '',
+    contractName: contractData.ContractName || `Contract-${address.slice(0, 6)}`,
+    compiler: contractData.CompilerVersion || 'Unknown',
+    optimization: contractData.OptimizationUsed === '1',
+    runs: contractData.Runs || '0',
+    constructorArguments: contractData.ConstructorArguments || '',
+    implementationAddress: contractData.Implementation || null,
+    proxyType: contractData.Proxy || '0',
+    isProxy: contractData.Proxy === '1',
+    verifiedAt: contractData.VerifiedTimestamp 
+      ? new Date(parseInt(contractData.VerifiedTimestamp) * 1000).toISOString() 
+      : null
+  };
+}
 /**
  * Get appropriate API key based on network
  */
 function getApiKey(network) {
   if (network.toLowerCase() === 'sonic') {
-    return process.env.SONICSCAN_API_KEY; // Use SonicScan API key
+    return process.env.SONICSCAN_API_KEY;
   }
-  return process.env.ETHERSCAN_API_KEY; // Use Etherscan API key
+  if (network.toLowerCase() === 'linea') {
+    return process.env.LINEASCAN_API_KEY || process.env.ETHERSCAN_API_KEY; // Utiliser LINEASCAN_API_KEY si disponible
+  }
+  return process.env.ETHERSCAN_API_KEY;
 }
 
+/**
+ * Get the Etherscan URL for a contract
+ * @param {string} address - The contract address
+ * @param {string} network - The blockchain network
+ * @returns {string} The Etherscan URL
+ */
+export function getEtherscanUrl(address, network = 'mainnet') {
+  let baseUrl;
+  
+  switch (network.toLowerCase()) {
+    case 'mainnet':
+      baseUrl = 'https://etherscan.io';
+      break;
+    case 'sonic':
+      baseUrl = 'https://sonicscan.org';
+      break;
+    case 'linea':
+      baseUrl = 'https://lineascan.build';
+      break;
+    default:
+      baseUrl = 'https://etherscan.io';
+  }
+  
+  return `${baseUrl}/address/${address}`;
+}
 /**
  * Adapts SonicScan API responses to match Etherscan format
  * @param {object} data - The API response data 
@@ -81,7 +140,13 @@ export async function getContractSource(address, network = 'mainnet') {
         verifiedAt: null
       };
     }
-
+    if (network.toLowerCase() === 'linea') {
+      console.log('Processing LineaScan API response');
+      const adaptedData = adaptLineaScanResponse(data, address);
+      if (adaptedData) {
+        return adaptedData;
+      }
+    }
     const baseUrl = getEtherscanBaseUrl(network);
     const url = `${baseUrl}/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
     
@@ -273,19 +338,3 @@ export async function getContractInfo(address, network = 'mainnet') {
  * @param {string} network - The blockchain network
  * @returns {string} The Etherscan URL
  */
-export function getEtherscanUrl(address, network = 'mainnet') {
-  let baseUrl;
-  
-  switch (network.toLowerCase()) {
-    case 'mainnet':
-      baseUrl = 'https://etherscan.io';
-      break;
-    case 'sonic':
-      baseUrl = 'https://sonicscan.org';
-      break;
-    default:
-      baseUrl = 'https://etherscan.io';
-  }
-  
-  return `${baseUrl}/address/${address}`;
-}

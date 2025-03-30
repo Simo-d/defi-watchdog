@@ -15,6 +15,8 @@ export default function Header() {
   const [chainId, setChainId] = useState(null);
 const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
   // Handle scroll for transparent to solid header transition
+  const SONIC_CHAIN_ID = 146;
+const LINEA_CHAIN_ID = 59144;
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY);
@@ -32,7 +34,7 @@ const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
           const chainId = await window.ethereum.request({ method: 'eth_chainId' });
           const currentChainId = parseInt(chainId, 16);
           setChainId(currentChainId);
-          setIsCorrectNetwork(currentChainId === 146); // Sonic chain ID
+          setIsCorrectNetwork(currentChainId === SONIC_CHAIN_ID || currentChainId === LINEA_CHAIN_ID);
         } catch (error) {
           console.error('Error checking network:', error);
         }
@@ -53,44 +55,68 @@ const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
       }
     };
   }, []);
+  const getNetworkName = (chainId) => {
+    if (chainId === SONIC_CHAIN_ID) return 'Sonic';
+    if (chainId === LINEA_CHAIN_ID) return 'Linea';
+    return 'Unknown';
+  };
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [router.pathname]);
 // Add this function in Header.js
 const handleNetworkSwitch = async () => {
-  const SONIC_CHAIN_ID = 146; // Sonic Chain ID
-  
   if (!account || !window.ethereum) return;
+  
+  // Get user's preference for network (default to Linea if undefined)
+  const userPrefersLinea = localStorage.getItem('preferredNetwork') !== 'sonic';
+  const targetChainId = userPrefersLinea ? LINEA_CHAIN_ID : SONIC_CHAIN_ID;
   
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${SONIC_CHAIN_ID.toString(16)}` }],
+      params: [{ chainId: `0x${targetChainId.toString(16)}` }],
     });
   } catch (switchError) {
     // This error code indicates that the chain has not been added to MetaMask
     if (switchError.code === 4902 || switchError.message.includes('wallet_addEthereumChain')) {
       try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
-            chainName: 'Sonic',
-            nativeCurrency: {
-              name: 'SONIC',
-              symbol: 'SONIC',
-              decimals: 18
-            },
-            rpcUrls: ['https://mainnet.sonic.io/rpc'],
-            blockExplorerUrls: ['https://sonicscan.org/']
-          }],
-        });
+        if (targetChainId === SONIC_CHAIN_ID) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
+              chainName: 'Sonic',
+              nativeCurrency: {
+                name: 'SONIC',
+                symbol: 'SONIC',
+                decimals: 18
+              },
+              rpcUrls: ['https://mainnet.sonic.io/rpc'],
+              blockExplorerUrls: ['https://sonicscan.org/']
+            }],
+          });
+        } else {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: `0x${LINEA_CHAIN_ID.toString(16)}`,
+              chainName: 'Linea Mainnet',
+              nativeCurrency: {
+                name: 'ETH',
+                symbol: 'ETH',
+                decimals: 18
+              },
+              rpcUrls: ['https://rpc.linea.build'],
+              blockExplorerUrls: ['https://lineascan.build/']
+            }],
+          });
+        }
       } catch (addError) {
-        setConnectionError('Could not add Sonic network to your wallet. Please add it manually.');
+        setConnectionError(`Could not add ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network to your wallet. Please add it manually.`);
       }
     } else {
-      setConnectionError('Failed to switch to Sonic network. Please try again.');
+      setConnectionError(`Failed to switch to ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network. Please try again.`);
     }
   }
 };
@@ -243,24 +269,24 @@ const handleNetworkSwitch = async () => {
             )}
           </button>
           {account && (
-            <div className="flex items-center mr-2">
-              <div className={`px-2 py-1 rounded-l-full text-xs font-medium ${
-                isCorrectNetwork 
-                  ? 'bg-green-100 text-green-800 border border-green-200' 
-                  : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-              }`}>
-                {isCorrectNetwork ? 'Sonic' : 'Wrong Network'}
-              </div>
-              {!isCorrectNetwork && (
-                <button
-                  onClick={handleNetworkSwitch}
-                  className="px-2 py-1 rounded-r-full text-xs font-medium bg-blue-500 text-white border border-blue-600 hover:bg-blue-600 transition-colors"
-                >
-                  Switch
-                </button>
-              )}
-            </div>
-          )}
+  <div className="flex items-center mr-2">
+    <div className={`px-2 py-1 rounded-l-full text-xs font-medium ${
+      isCorrectNetwork 
+        ? 'bg-green-100 text-green-800 border border-green-200' 
+        : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+    }`}>
+      {isCorrectNetwork ? getNetworkName(chainId) : 'Wrong Network'}
+    </div>
+    {!isCorrectNetwork && (
+      <button
+        onClick={handleNetworkSwitch}
+        className="px-2 py-1 rounded-r-full text-xs font-medium bg-blue-500 text-white border border-blue-600 hover:bg-blue-600 transition-colors"
+      >
+        Switch
+      </button>
+    )}
+  </div>
+)}
           {/* Connection Error Indicator (if any) */}
           {connectionError && !account && (
             <div className="hidden md:block absolute top-20 right-4 bg-red-100 text-red-700 p-2 rounded-md text-xs border border-red-200 max-w-xs">

@@ -1102,8 +1102,9 @@ function ZerePyAgentStatus({ isActive, lastUpdated }) {
 }
 
 // SonicNetworkBadge component to emphasize Sonic blockchain integration
-function SonicNetworkBadge({ network }) {
+function NetworkBadge({ network }) {
   const isSonic = network === 'sonic';
+  const isLinea = network === 'linea' || network === 'mainnet';
   
   return (
     <div style={{
@@ -1111,8 +1112,8 @@ function SonicNetworkBadge({ network }) {
       alignItems: 'center',
       padding: '0.25rem 0.75rem',
       borderRadius: '9999px',
-      backgroundColor: isSonic ? '#8b5cf6' : '#e5e7eb',
-      color: isSonic ? 'white' : '#4b5563',
+      backgroundColor: isSonic ? '#8b5cf6' : isLinea ? '#2563eb' : '#e5e7eb',
+      color: (isSonic || isLinea) ? 'white' : '#4b5563',
       fontWeight: 'bold',
       fontSize: '0.75rem',
       marginLeft: '0.5rem'
@@ -1123,6 +1124,13 @@ function SonicNetworkBadge({ network }) {
             <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Sonic Blockchain
+        </>
+      ) : isLinea ? (
+        <>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.25rem' }}>
+            <path d="M12 22V2M2 12h20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Linea Blockchain
         </>
       ) : 'Ethereum'}
     </div>
@@ -1613,7 +1621,7 @@ export default function Audit() {
                     borderRadius: '0.25rem'
                   }}
                 >
-                  <option value="mainnet">Ethereum Mainnet</option>
+                  <option value="mainnet">Linea Mainnet</option>
                   <option value="sonic">Sonic</option>
                 </select>
               </div>
@@ -1682,7 +1690,7 @@ export default function Audit() {
               <div style={{ background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #eee', backgroundColor: '#fef2f2' }}>
                   <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results <SonicNetworkBadge network={network} /> </h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Contract Analysis Results <NetworkBadge network={network} /> </h2>
                     <p style={{ color: '#6b7280' }}>{result.contractName} ({result.address.substring(0, 6)}...{result.address.slice(-4)})</p>
                   </div>
                   <div style={{ 

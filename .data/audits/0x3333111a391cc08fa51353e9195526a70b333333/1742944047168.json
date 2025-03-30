@@ -1,0 +1,103 @@
+{
+  "success": true,
+  "address": "0x3333111a391cc08fa51353e9195526a70b333333",
+  "network": "sonic",
+  "contractName": "x33",
+  "contractType": "ERC20 Token",
+  "compiler": "v0.8.28+commit.7893614a",
+  "analysis": {
+    "overview": "The contract is generally well-designed with several security features like reentrancy guards and locking mechanisms. However, the centralization of operator privileges and the whitelisting of aggregators introduce some risks. The contract's security could be improved by decentralizing critical operations and adding more robust checks on external interactions.\n\nThis contract appears to be optimized for the Sonic blockchain with 1 Sonic-specific optimizations detected.",
+    "contractType": "ERC20 Token",
+    "keyFeatures": [
+      "Token transfers and approvals",
+      "Balance tracking per address",
+      "Allowance mechanism for delegated spending"
+    ],
+    "implementationDetails": {
+      "standard": "ERC20",
+      "extensions": [
+        "No extensions identified"
+      ],
+      "patternUsage": "Uses standard implementation patterns with some customizations.",
+      "accessControl": "Undetermined access control mechanism.",
+      "upgradeability": "Non-upgradeable contract with fixed implementation."
+    },
+    "risks": [
+      {
+        "severity": "MEDIUM",
+        "description": "The contract has an operator with significant privileges, including the ability to submit votes, compound rewards, claim rebases, and claim incentives. This centralization could be a risk if the operator's account is compromised.",
+        "codeReference": "See full report",
+        "impact": "Compromise of the operator's account could lead to unauthorized actions affecting the contract's operations and user funds.",
+        "recommendation": "Decentralize critical operations by implementing multi-signature controls or governance mechanisms to reduce reliance on a single operator."
+      },
+      {
+        "severity": "LOW",
+        "description": "The contract allows swapping incentives via whitelisted aggregators. While there's a check for whitelisting, the list is controlled by the accessHub, which could be a centralization risk.",
+        "codeReference": "See full report",
+        "impact": "Central control over the whitelist could lead to manipulation or unauthorized changes to the aggregator list.",
+        "recommendation": "Implement a governance mechanism for managing the whitelist to ensure decentralized control and transparency."
+      },
+      {
+        "severity": "INFO",
+        "description": "The contract includes a locking mechanism to prevent certain actions during specific periods. While this is a security feature, it could be used to temporarily freeze user actions.",
+        "codeReference": "See full report",
+        "impact": "Legitimate user actions could be temporarily blocked during locked periods.",
+        "recommendation": "Ensure clear communication and transparency about locking periods and their implications for users."
+      },
+      {
+        "title": "Standard Bridge Pattern",
+        "description": "Contract uses standard EVM bridge patterns instead of Sonic Gateway",
+        "severity": "LOW",
+        "impact": "Moderate - Missing optimization for cross-chain operations",
+        "recommendation": "Implement Sonic Gateway for better cross-chain performance",
+        "consensus": "Identified by ZerePy Agent",
+        "sonicSpecific": true
+      }
+    ],
+    "securityConsiderations": {
+      "transferMechanisms": "Standard transfer implementations.",
+      "reentrancyProtection": "No specific reentrancy protections noted.",
+      "arithmeticSafety": "Standard arithmetic operations.",
+      "accessControls": "Basic access controls implemented."
+    },
+    "securityScore": 87,
+    "riskLevel": "Low Risk",
+    "explanation": "The contract is generally well-designed with several security features like reentrancy guards and locking mechanisms. However, the centralization of operator privileges and the whitelisting of aggregators introduce some risks. The contract's security could be improved by decentralizing critical operations and adding more robust checks on external interactions.",
+    "codeQuality": {
+      "readability": "High",
+      "modularity": "Good",
+      "testCoverage": "Unknown",
+      "documentation": "Well-documented with NatSpec comments"
+    },
+    "findingCounts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 1
+    },
+    "sonicSpecifics": {
+      "optimizedForSonic": true,
+      "usesSonicGateway": false,
+      "batchProcessingOptimized": true,
+      "highThroughputDetected": false,
+      "recentTransactions": 0,
+      "averageGasUsed": 0,
+      "bytecodeSize": 20326,
+      "balance": "0.0",
+      "txCount": 1,
+      "compatibilityLevel": "High",
+      "sonicIntegrationScore": 67
+    },
+    "analyzedBy": "ZerePy"
+  },
+  "securityScore": 87,
+  "riskyCodeSnippets": [],
+  "riskLevel": "Low Risk",
+  "isSafe": true,
+  "analysisTime": "58.91s",
+  "timestamp": "2025-03-25T23:07:20.773Z",
+  "zerebro": true,
+  "_id": "4da6c58b-4826-480d-a3af-aac00bd96f85",
+  "createdAt": "2025-03-25T23:07:27.167Z"
+}

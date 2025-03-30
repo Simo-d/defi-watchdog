@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from './useWallet';
-// Add this near the top of your useContract.js file
-const SONIC_CHAIN_ID = 146; // Replace with the actual Sonic chain ID
+
+// Chain ID constants
+const SONIC_CHAIN_ID = 146;
+const LINEA_CHAIN_ID = 59144;
+const ACCEPTED_CHAIN_IDS = [SONIC_CHAIN_ID, LINEA_CHAIN_ID];
+
+// Network-specific contract addresses
+const CONTRACTS = {
+  [SONIC_CHAIN_ID]: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_SONIC,
+  [LINEA_CHAIN_ID]: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_LINEA,
+  'default': process.env.NEXT_PUBLIC_CONTRACT_ADDRESS // Fallback to original env var
+};
+
 // Hardcoded contract ABI for when the import fails
 const FALLBACK_ABI = [
   {
@@ -36,9 +47,7 @@ export function useContract() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
-
-  // Get contract address from environment variable
-  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+  const [currentChainId, setCurrentChainId] = useState(null);
 
   useEffect(() => {
     const initContract = async () => {
@@ -50,6 +59,14 @@ export function useContract() {
           try {
             // Create ethers provider from MetaMask
             const ethereumProvider = new ethers.providers.Web3Provider(window.ethereum);
+            
+            // Get current chainId
+            const networkInfo = await ethereumProvider.getNetwork();
+            const chainId = networkInfo.chainId;
+            setCurrentChainId(chainId);
+            
+            // Get contract address for current network
+            const networkContractAddress = CONTRACTS[chainId] || CONTRACTS['default'];
             
             // Request account access - wrapped in try/catch to handle user rejection
             try {
@@ -64,9 +81,9 @@ export function useContract() {
             // Get the signer
             const ethereumSigner = ethereumProvider.getSigner();
             
-            // Check if contract address is configured
-            if (!contractAddress) {
-              console.warn('Contract address not configured in environment variables');
+            // Check if contract address is configured for this network
+            if (!networkContractAddress) {
+              console.warn('Contract address not configured for network:', chainId);
               setupMockContract();
               return;
             }
@@ -85,9 +102,9 @@ export function useContract() {
               console.warn('Could not import contract ABI, using fallback ABI', importError);
             }
             
-            // Create contract instance with the real address
+            // Create contract instance with the network-specific address
             const contractInstance = new ethers.Contract(
-              contractAddress,
+              networkContractAddress,
               contractAbi,
               ethereumSigner
             );
@@ -169,15 +186,28 @@ export function useContract() {
       setIsOwner(false);
     };
 
+    // Handle network changes
+    const handleChainChanged = () => {
+      console.log('Network changed, reinitializing contract');
+      initContract();
+    };
+    
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', handleChainChanged);
+    }
+
     initContract();
-  }, [account, contractAddress]);
+    
+    // Clean up event listeners
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+      }
+    };
+  }, [account]);
 
   // Function to mint a certificate
-
   const mintCertificate = async (contractAddress) => {
-    // Define Sonic chain ID
-    const SONIC_CHAIN_ID = 146;
-    
     if (!contract) {
       throw new Error('Contract not initialized');
     }
@@ -200,23 +230,27 @@ export function useContract() {
       try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         
-        // Check if we're on the Sonic network
+        // Check if we're on an accepted network
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         const currentChainId = parseInt(chainId, 16);
         
-        // If not on Sonic network, try to switch
-        if (currentChainId !== SONIC_CHAIN_ID) {
-          console.log(`Switching to Sonic network (${SONIC_CHAIN_ID}) from current network (${currentChainId})`);
+        // If not on an accepted network, try to switch
+        if (!ACCEPTED_CHAIN_IDS.includes(currentChainId)) {
+          console.log(`Switching to supported network from current network (${currentChainId})`);
+          
+          // Get user's preference for network (default to Linea if undefined)
+          const userPrefersLinea = localStorage.getItem('preferredNetwork') !== 'sonic';
+          const targetChainId = userPrefersLinea ? LINEA_CHAIN_ID : SONIC_CHAIN_ID;
           
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: `0x${SONIC_CHAIN_ID.toString(16)}` }],
+              params: [{ chainId: `0x${targetChainId.toString(16)}` }],
             });
             
             // Wait for chain to switch (important!)
             await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('Switched to Sonic network');
+            console.log(`Switched to ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network`);
             
           } catch (switchError) {
             console.log('Error switching chain:', switchError);
@@ -226,39 +260,63 @@ export function useContract() {
                 switchError.message.includes('wallet_addEthereumChain') ||
                 switchError.message.includes('Unrecognized chain ID')) {
               try {
-                await window.ethereum.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
-                    chainName: 'Sonic',
-                    nativeCurrency: {
-                      name: 'SONIC',
-                      symbol: 'SONIC',
-                      decimals: 18
-                    },
-                    rpcUrls: ['https://mainnet.sonic.io/rpc'],
-                    blockExplorerUrls: ['https://sonicscan.org/']
-                  }],
-                });
+                if (targetChainId === SONIC_CHAIN_ID) {
+                  await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                      chainId: `0x${SONIC_CHAIN_ID.toString(16)}`,
+                      chainName: 'Sonic',
+                      nativeCurrency: {
+                        name: 'SONIC',
+                        symbol: 'SONIC',
+                        decimals: 18
+                      },
+                      rpcUrls: ['https://mainnet.sonic.io/rpc'],
+                      blockExplorerUrls: ['https://sonicscan.org/']
+                    }],
+                  });
+                } else {
+                  await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                      chainId: `0x${LINEA_CHAIN_ID.toString(16)}`,
+                      chainName: 'Linea Mainnet',
+                      nativeCurrency: {
+                        name: 'ETH',
+                        symbol: 'ETH',
+                        decimals: 18
+                      },
+                      rpcUrls: ['https://rpc.linea.build'],
+                      blockExplorerUrls: ['https://lineascan.build/']
+                    }],
+                  });
+                }
                 
                 // Wait for chain to be added
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                console.log('Added Sonic network to wallet');
+                console.log(`Added ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network to wallet`);
                 
               } catch (addError) {
                 console.error('Error adding chain:', addError);
-                throw new Error('Could not add Sonic network to your wallet. Please add it manually.');
+                throw new Error(`Could not add ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network to your wallet. Please add it manually.`);
               }
             } else {
-              throw new Error('Failed to switch to Sonic network. Please switch manually.');
+              throw new Error(`Failed to switch to ${targetChainId === SONIC_CHAIN_ID ? 'Sonic' : 'Linea'} network. Please switch manually.`);
             }
           }
           
           // Re-initialize the provider after network switch
           const ethereumProvider = new ethers.providers.Web3Provider(window.ethereum);
           const ethereumSigner = ethereumProvider.getSigner();
+          
+          // Get the contract address for the new network
+          const newChainId = await window.ethereum.request({ method: 'eth_chainId' });
+          const newChainIdNum = parseInt(newChainId, 16);
+          const newNetworkContractAddress = CONTRACTS[newChainIdNum] || CONTRACTS['default'];
+          
+          // Create updated contract with the correct address
           const updatedContract = new ethers.Contract(
-            contractAddress,
+            newNetworkContractAddress,
             contract.interface,
             ethereumSigner
           );
@@ -319,6 +377,7 @@ export function useContract() {
     loading,
     error,
     walletAvailable,
-    mintCertificate
+    mintCertificate,
+    currentChainId
   };
 }

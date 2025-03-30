@@ -5,15 +5,21 @@ import { getContractSource, getContractInfo, getEtherscanUrl } from './etherscan
 import connectToDatabase from './database';
 import AuditReport from '../models/AuditReport';
 import { multiAIAudit, adaptMultiAIResults } from './multi-ai-audit';
+import { analyzeWithDeepseek, validateFindingsWithDeepseek } from './deepseek';
 
 // Configuration for AI models
 const AI_CONFIG = {
   primary: {
-    model: config.ai.openai.model,
-    apiKey: process.env.OPENAI_API_KEY,
-    endpoint: 'https://api.openai.com/v1/chat/completions'
+    model: "deepseek-coder",
+    apiKey: process.env.DEEPSEEK_API_KEY || 'sk-00cdc9ed60f040b29f0719c993b651fa',
+    endpoint: 'https://api.deepseek.com/v1/chat/completions'
   },
   secondary: {
+    model: "deepseek-coder",
+    apiKey: process.env.DEEPSEEK_API_KEY || 'sk-00cdc9ed60f040b29f0719c993b651fa',
+    endpoint: 'https://api.deepseek.com/v1/chat/completions'
+  },
+  fallback: {
     model: config.ai.openai.fallbackModel,
     apiKey: process.env.OPENAI_API_KEY,
     endpoint: 'https://api.openai.com/v1/chat/completions'
@@ -383,6 +389,63 @@ function findLineNumbers(sourceCode, matches) {
   
   return lineNumbers;
 }
+async function performDeepseekAnalysis(contractData, contractMetadata, staticAnalysisResults) {
+  try {
+    console.log("Starting Deepseek analysis for", contractMetadata.name);
+    
+    // Use the Deepseek API directly
+    const deepseekResult = await analyzeWithDeepseek(
+      contractData.sourceCode, 
+      contractMetadata.name,
+      {
+        model: AI_CONFIG.primary.model,
+        temperature: 0.1,
+        max_tokens: 4000
+      }
+    );
+    
+    // Parse the Deepseek response to extract structured findings
+    const aiResults = {
+      findings: deepseekResult.risks.map(risk => ({
+        title: risk.title || "Security Issue",
+        description: risk.description,
+        severity: risk.severity,
+        impact: risk.impact || "Potential security issue",
+        recommendation: risk.recommendation || "Review code related to this pattern",
+        codeReference: risk.codeReference || "Unknown"
+      })),
+      overallAssessment: deepseekResult.explanation || deepseekResult.overview,
+      securityScore: deepseekResult.securityScore,
+      contractType: deepseekResult.contractType
+    };
+    
+    // If AI analysis had no findings, add the static analysis findings
+    if (!aiResults.findings || aiResults.findings.length === 0) {
+      console.log("Deepseek analysis returned no findings, using static analysis findings");
+      aiResults.findings = staticAnalysisResults.map(finding => ({
+        title: finding.type,
+        description: finding.description,
+        severity: finding.severity,
+        impact: "Potential security issue detected by static analysis",
+        recommendation: "Review code related to this pattern"
+      }));
+    }
+    
+    return aiResults;
+  } catch (error) {
+    console.error("Deepseek analysis failed:", error);
+    
+    // Try to use OpenAI as fallback if available
+    try {
+      console.log("Attempting fallback to OpenAI analysis");
+      return await performAIAnalysis(contractData, contractMetadata, staticAnalysisResults);
+    } catch (fallbackError) {
+      console.error("Fallback analysis also failed:", fallbackError);
+      // Create a meaningful report from static analysis as fallback
+      return createStaticAnalysisReport(staticAnalysisResults, contractMetadata.type);
+    }
+  }
+}
 
 /**
  * Perform AI-powered analysis on the contract code
@@ -695,6 +758,9 @@ function parseAIResponse(aiResponse) {
 /**
  * Validate findings with a second AI model for consensus
  */
+/**
+ * Validate findings with a second AI model for consensus
+ */
 async function validateFindings(contractData, aiAnalysisResults) {
   try {
     // Only validate if we have findings to validate
@@ -737,16 +803,53 @@ async function validateFindings(contractData, aiAnalysisResults) {
       }
     `;
     
-    // Call the secondary AI model
-    const validationResponse = await callAIModel(AI_CONFIG.secondary, validationPrompt);
-    
-    // Parse the validation response
-    const validationResults = parseValidationResponse(validationResponse);
-    
-    // Merge the validated findings into the final results
-    return mergeValidatedFindings(aiAnalysisResults, validationResults);
+    // Call Deepseek API directly for validation
+    try {
+      const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-00cdc9ed60f040b29f0719c993b651fa';
+      const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+      
+      const response = await fetch(DEEPSEEK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: AI_CONFIG.secondary.model || "deepseek-coder",
+          messages: [
+            { role: "user", content: validationPrompt }
+          ],
+          temperature: 0.2,
+          max_tokens: 4000,
+          response_format: { type: "json_object" }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Deepseek API validation request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const validationResults = JSON.parse(data.choices[0].message.content);
+      
+      // Merge the validated findings into the final results
+      return mergeValidatedFindings(aiAnalysisResults, validationResults);
+    } catch (deepseekError) {
+      console.error("Validation with Deepseek failed:", deepseekError);
+      
+      // Fall back to secondary AI model if Deepseek direct API fails
+      try {
+        console.log("Falling back to secondary AI model for validation");
+        const validationResponse = await callAIModel(AI_CONFIG.secondary, validationPrompt);
+        const validationResults = parseValidationResponse(validationResponse);
+        return mergeValidatedFindings(aiAnalysisResults, validationResults);
+      } catch (fallbackError) {
+        console.error("Fallback validation also failed:", fallbackError);
+        return aiAnalysisResults;
+      }
+    }
   } catch (error) {
-    console.error("Validation failed:", error);
+    console.error("Validation process failed:", error);
     // Return original findings if validation fails
     return aiAnalysisResults;
   }

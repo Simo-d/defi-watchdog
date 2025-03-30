@@ -1,5 +1,5 @@
 // pages/api/analyze.js
-import { auditSmartContract } from '../../lib/analyzer';
+import { auditSmartContract } from './analyze-helpers';
 import { saveAuditReport, findMostRecentAuditReport } from '../../lib/localStorage';
 
 // Active requests tracking
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       }
     });
     
-    const { address, network = 'mainnet', forceRefresh = false, useMultiAI = false, fastMode = true } = req.body;
+    const { address, network = 'linea', forceRefresh = false, useMultiAI = false, fastMode = true } = req.body;
 
     // Validate inputs
     if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
@@ -83,6 +83,11 @@ export default async function handler(req, res) {
         // Continue with regular analysis if ZerePy fails
         console.log('Falling back to standard analysis for Sonic network');
       }
+    } 
+    // Handle Linea (previously 'mainnet') the same way we handled mainnet before
+    else if (network === 'linea' || network === 'mainnet') {
+      // Proceed with regular analysis flow (no changes needed)
+      console.log(`Performing standard analysis for ${network === 'mainnet' ? 'Linea (mainnet)' : 'Linea'} network`);
     }
     
     // Create a unique key for this request
@@ -121,7 +126,7 @@ export default async function handler(req, res) {
         // If we get here, we need to perform a new audit
         console.log(`Performing ${fastMode ? 'fast' : 'detailed'} audit for ${address} on ${network}`);
 
-        const timeoutDuration = fastMode ? 25000 : 60000; // 25 seconds for fast mode
+        const timeoutDuration = fastMode ? 45000 : 90000; // 25 seconds for fast mode
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error(`Analysis timed out after ${timeoutDuration/1000} seconds`)), timeoutDuration);
         });
@@ -175,7 +180,7 @@ export default async function handler(req, res) {
       success: false,
       error: errorMessage,
       address: req.body.address || '',
-      network: req.body.network || 'mainnet',
+      network: req.body.network || 'linea', // Changed default from 'mainnet' to 'linea'
       contractName: "Error",
       contractType: "Unknown",
       analysis: {

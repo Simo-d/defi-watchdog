@@ -13,6 +13,9 @@ export function WalletProvider({ children }) {
   const [availableWallets, setAvailableWallets] = useState([]);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   
+// Define chain constants at the top
+const SONIC_CHAIN_ID = 146;
+const LINEA_CHAIN_ID = 59144;
   // Use refs to prevent circular dependencies
   const providerRef = useRef();
   providerRef.current = provider;
@@ -283,26 +286,46 @@ export function WalletProvider({ children }) {
       });
       return true;
     } catch (error) {
-      // Chain doesn't exist, try to add it (specifically for Sonic)
-      if ((error.code === 4902 || error.message.includes('wallet_addEthereumChain')) && chainId === 146) {
+      // Chain doesn't exist, try to add it
+      if (error.code === 4902 || error.message.includes('wallet_addEthereumChain')) {
         try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: `0x${chainId.toString(16)}`,
-              chainName: 'Sonic',
-              nativeCurrency: {
-                name: 'SONIC',
-                symbol: 'SONIC',
-                decimals: 18
-              },
-              rpcUrls: ['https://mainnet.sonic.io/rpc'],
-              blockExplorerUrls: ['https://sonicscan.org/']
-            }],
-          });
-          return true;
+          if (chainId === SONIC_CHAIN_ID) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: `0x${chainId.toString(16)}`,
+                chainName: 'Sonic',
+                nativeCurrency: {
+                  name: 'SONIC',
+                  symbol: 'SONIC',
+                  decimals: 18
+                },
+                rpcUrls: ['https://mainnet.sonic.io/rpc'],
+                blockExplorerUrls: ['https://sonicscan.org/']
+              }],
+            });
+            return true;
+          } else if (chainId === LINEA_CHAIN_ID) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: `0x${chainId.toString(16)}`,
+                chainName: 'Linea Mainnet',
+                nativeCurrency: {
+                  name: 'ETH',
+                  symbol: 'ETH',
+                  decimals: 18
+                },
+                rpcUrls: ['https://rpc.linea.build'],
+                blockExplorerUrls: ['https://lineascan.build/']
+              }],
+            });
+            return true;
+          }
+          setError(`Failed to add network: Unknown chain ID ${chainId}`);
+          return false;
         } catch (addError) {
-          setError(`Failed to add Sonic network: ${addError.message}`);
+          setError(`Failed to add network: ${addError.message}`);
           return false;
         }
       }

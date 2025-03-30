@@ -1,7 +1,7 @@
 // pages/api/zerebro/analyze.js
 import { ethers } from 'ethers';
 import { findMostRecentAuditReport, saveAuditReport } from '../../../lib/localStorage';
-import { auditSmartContract } from '../../../lib/analyzer';
+import { auditSmartContract } from '../analyze-helpers';
 
 // Active requests tracking
 const activeRequests = new Map();
